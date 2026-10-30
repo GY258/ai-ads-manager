@@ -5,6 +5,7 @@ import { buildSystemPrompt } from "@/lib/agent/system-prompt";
 import { buildTools, type AppUIMessage } from "@/lib/agent/tools";
 import * as repo from "@/lib/db/repo";
 import { closeInterruptedToolCalls } from "@/lib/agent/transcript";
+import { requiredNextTool } from "@/lib/agent/flow";
 
 export const maxDuration = 300;
 
@@ -29,6 +30,10 @@ export async function POST(req: Request) {
         messages: await convertToModelMessages(messages, { tools }),
         tools,
         stopWhen: isStepCount(8),
+        prepareStep: ({ messages: stepMessages }) => {
+          const next = requiredNextTool(stepMessages);
+          return next ? { toolChoice: { type: "tool", toolName: next as keyof typeof tools } } : {};
+        },
         providerOptions: speedOptions(modelId("chat")),
       });
       writer.merge(toUIMessageStream({ stream: result.stream, sendReasoning: false }));
