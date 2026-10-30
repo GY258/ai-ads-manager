@@ -1,5 +1,6 @@
 import "server-only";
 import { env } from "@/lib/env";
+import { httpGet } from "@/lib/adapters/http";
 import { mkdir, readFile, writeFile, stat } from "node:fs/promises";
 import path from "node:path";
 
@@ -47,7 +48,7 @@ export function publicUrl(p: string): string {
 
 /** Copy a remote file (fal, Shopify CDN) into our bucket. The remote URL is never the only copy. */
 export async function uploadFromUrl(p: StoragePath, url: string): Promise<{ path: StoragePath; contentType: string; bytes: Uint8Array }> {
-  const res = await fetch(url);
+  const res = await httpGet(url);
   if (!res.ok) throw new Error(`download failed ${res.status} for ${url}`);
   const contentType = res.headers.get("content-type")?.split(";")[0] ?? "application/octet-stream";
   const bytes = new Uint8Array(await res.arrayBuffer());

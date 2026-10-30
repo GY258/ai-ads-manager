@@ -1,0 +1,16 @@
+{
+  "_note": "Hand-written in Firecrawl v2 /scrape response shape (no FIRECRAWL_API_KEY at record time). Values taken from the recorded homepage CSS and meta tags.",
+  "success": true,
+  "data": {
+    "markdown": "# LoopyCases® | The Original Finger Grip Case to StoptheDrop®\n\nTrusted since 2012, Loopy® has 70,000+ five star reviews, risk-free returns, and a lifetime warranty! Tired of dropping your phone? Loopy® has a comfy finger loop that prevents drops, increases grip and reach.\n\nGet in the Loop™ and StoptheDrop® today!",
+    "branding": {
+      "colorScheme": "light",
+      "brandName": "Loopy Cases",
+      "logo": "https://www.loopycases.com/cdn/shop/files/shopify_logo_dark_45b7479c-726f-4557-96ed-6360d61e0744.png",
+      "colors": { "primary": "#8FE8B3", "secondary": "#272D45", "accent": "#FFCF2A", "background": "#FFFFFF", "textPrimary": "#272D45" },
+      "fonts": [{ "family": "Exo" }, { "family": "Roboto" }],
+      "typography": { "fontFamilies": { "primary": "Roboto", "heading": "Exo" } }
+    },
+    "metadata": { "title": "LoopyCases® | The Original Finger Grip Case to StoptheDrop®", "sourceURL": "https://www.loopycases.com/", "statusCode": 200 }
+  }
+}

@@ -9,4 +9,5 @@ Decisions the spec (SPEC.md) leaves open, one line of reasoning each.
 - **Migrations applied by `pnpm db:migrate` (own `_migrations` table)** rather than `supabase db push`: no Supabase CLI login needed; equivalent to `supabase db reset` on an empty database.
 - **`cacheComponents` turned off**: every page here is per-campaign dynamic data; PPR adds Suspense boundaries for no benefit.
 - **Vendored shadcn / AI Elements files are excluded from lint**: they are generated code we don't own.
-- **Default models**: `CHAT_MODEL=anthropic/claude-sonnet-5.5`, `SUBAGENT_MODEL=anthropic/claude-haiku-5.5`, `QA_MODEL=google/gemini-3.5-flash-lite` (cheap vision) — all through AI Gateway.
+- **Default models are the AI Gateway free-tier ones**: `CHAT_MODEL=google/gemini-2.5-flash`, `SUBAGENT_MODEL` and `QA_MODEL=google/gemini-2.5-flash-lite`. The team has no paid Gateway credits, and newer models (Claude, Gemini 3.x) return 403 on the free tier. After topping up, set `CHAT_MODEL=anthropic/claude-sonnet-5.5` and `SUBAGENT_MODEL=anthropic/claude-haiku-5.5` in Vercel env; no code change.
+- **Product upserts are set-based (`jsonb_to_recordset`)**: per-row round trips over the Supabase pooler took over 5 minutes for 230 products; a single statement takes under a second.

@@ -69,34 +69,45 @@ export async function setBrandStatus(id: string, to: BrandStatus): Promise<Brand
 export type ProductInput = Omit<Product, "id" | "brand_id"> & { images: { source_url: string; width?: number | null; height?: number | null; position: number }[] };
 export type ProductWithImages = Product & { images: ProductImage[] };
 
+/** Set-based upsert (one statement per 200 rows) — per-row round trips over the pooler took minutes for 230 products. */
 export async function upsertProducts(brandId: string, products: ProductInput[]): Promise<ProductWithImages[]> {
   return (await getDb()).tx(async (db) => {
-    const out: ProductWithImages[] = [];
-    for (const p of products) {
-      const [row] = await db.query<Product>(
-        `insert into products (user_id, brand_id, source_id, handle, title, description, price, currency, url, tags)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-         on conflict (brand_id, source_id) do update set handle = excluded.handle, title = excluded.title,
-           description = excluded.description, price = excluded.price, currency = excluded.currency, url = excluded.url, tags = excluded.tags
-         returning *`,
-        [uid(), brandId, p.source_id, p.handle, p.title, p.description, p.price, p.currency, p.url, p.tags],
+    const rows: Product[] = [];
+    for (let i = 0; i < products.length; i += 200) {
+      const chunk = products.slice(i, i + 200).map((p) => ({ ...p, images: undefined }));
+      rows.push(
+        ...(await db.query<Product>(
+          `insert into products (user_id, brand_id, source_id, handle, title, description, price, currency, url, tags)
+           select $1, $2, x.source_id, x.handle, x.title, x.description, x.price, x.currency, x.url, coalesce(x.tags, '{}')
+           from jsonb_to_recordset($3::jsonb) as x(source_id text, handle text, title text, description text, price numeric, currency text, url text, tags text[])
+           on conflict (brand_id, source_id) do update set handle = excluded.handle, title = excluded.title,
+             description = excluded.description, price = excluded.price, currency = excluded.currency, url = excluded.url, tags = excluded.tags
+           returning *`,
+          [uid(), brandId, json(chunk)],
+        )),
       );
-      const images: ProductImage[] = [];
-      for (const img of p.images) {
-        const [ir] = await db.query<ProductImage>(
+    }
+    const idBySource = new Map(rows.map((r) => [r.source_id, r.id]));
+    const imageRows = products.flatMap((p) => p.images.map((img) => ({ product_id: idBySource.get(p.source_id)!, source_url: img.source_url, width: img.width ?? null, height: img.height ?? null, position: img.position })));
+    const images: ProductImage[] = [];
+    for (let i = 0; i < imageRows.length; i += 500) {
+      images.push(
+        ...(await db.query<ProductImage>(
           `insert into product_images (user_id, product_id, source_url, width, height, position)
-           values ($1,$2,$3,$4,$5,$6)
+           select $1, x.product_id, x.source_url, x.width, x.height, x.position
+           from jsonb_to_recordset($2::jsonb) as x(product_id uuid, source_url text, width int, height int, position int)
            on conflict (product_id, position) do update set
              storage_path = case when product_images.source_url = excluded.source_url then product_images.storage_path else null end,
              source_url = excluded.source_url, width = excluded.width, height = excluded.height
            returning *`,
-          [uid(), row.id, img.source_url, img.width ?? null, img.height ?? null, img.position],
-        );
-        images.push(ir);
-      }
-      out.push({ ...row, images });
+          [uid(), json(imageRows.slice(i, i + 500))],
+        )),
+      );
     }
-    return out;
+    const order = new Map(products.map((p, i) => [p.source_id, i]));
+    return rows
+      .sort((a, b) => order.get(a.source_id)! - order.get(b.source_id)!)
+      .map((r) => ({ ...r, images: images.filter((img) => img.product_id === r.id).sort((a, b) => a.position - b.position) }));
   });
 }
 

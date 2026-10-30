@@ -1,0 +1,64 @@
+{
+ "_note": "Hand-written Firecrawl v2 responses for the synthetic non-Shopify store.",
+ "success": true,
+ "data": {
+  "markdown": "# Fernwood Candle Co.\n\nHand-poured soy candles for slow evenings.",
+  "links": [
+   "https://fernwood.example/shop/cedar-smoke",
+   "https://fernwood.example/shop/fig-and-moss",
+   "https://fernwood.example/about"
+  ],
+  "branding": {
+   "brandName": "Fernwood Candle Co.",
+   "logo": "https://fernwood.example/assets/logo.png",
+   "colors": {
+    "primary": "#2F4A3A",
+    "secondary": "#E9C46A",
+    "background": "#FAF7F2"
+   },
+   "fonts": [
+    {
+     "family": "Lora"
+    }
+   ]
+  },
+  "metadata": {
+   "title": "Fernwood Candle Co. \u2014 Hand-poured soy candles",
+   "statusCode": 200
+  }
+ },
+ "products": [
+  {
+   "url": "https://fernwood.example/shop/cedar-smoke",
+   "product": {
+    "name": "Cedar Smoke Candle",
+    "description": "Cedarwood, vetiver and a curl of smoke. 8oz soy, 50 hour burn.",
+    "price": {
+     "amount": 28.0,
+     "currency": "USD"
+    },
+    "images": [
+     {
+      "url": "https://fernwood.example/assets/cedar-smoke.jpg"
+     }
+    ]
+   }
+  },
+  {
+   "url": "https://fernwood.example/shop/fig-and-moss",
+   "product": {
+    "name": "Fig & Moss Candle",
+    "description": "Ripe fig over damp green moss. 8oz soy, cotton wick.",
+    "price": {
+     "amount": 28.0,
+     "currency": "USD"
+    },
+    "images": [
+     {
+      "url": "https://fernwood.example/assets/fig-and-moss.jpg"
+     }
+    ]
+   }
+  }
+ ]
+}
