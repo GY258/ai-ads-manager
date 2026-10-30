@@ -35,9 +35,9 @@ function modelId(role: ModelRole) {
 export function chatModel(): LanguageModel {
   if (env().AI_MODE === "mock") {
     return new MockLanguageModelV4({
-      doStream: async ({ prompt }) => {
+      doStream: async ({ prompt, tools }) => {
         mockCalls.push({ role: "chat", name: "agent", prompt: promptText(prompt) });
-        const parts = mockAgentTurn(prompt);
+        const parts = mockAgentTurn(prompt, (tools ?? []).map((t) => t.name));
         const chunks: LanguageModelV4StreamPart[] = [];
         for (const p of parts) {
           if (p.type === "text") {

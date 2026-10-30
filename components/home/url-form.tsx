@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { startCampaign, type UrlFormState } from "@/app/actions/campaign";
 
 const EXAMPLES = ["www.loopycases.com", "www.allbirds.com", "www.ridgewallet.com"];
 
 export function UrlForm() {
-  const [url, setUrl] = useState("");
+  const [state, action, pending] = useActionState<UrlFormState, FormData>(startCampaign, {});
+  const [url, setUrl] = useState(state.url ?? "");
   return (
-    <form className="space-y-3" onSubmit={(e) => e.preventDefault()}>
+    <form className="space-y-3" action={action}>
       <label htmlFor="store-url" className="text-sm font-medium">
         Store URL
       </label>
@@ -19,13 +21,20 @@ export function UrlForm() {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="www.loopycases.com"
-          className="h-10 flex-1 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-invalid={!!state.error}
+          aria-describedby={state.error ? "store-url-error" : undefined}
+          className="h-10 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring aria-invalid:border-destructive"
         />
-        <Button type="submit" className="h-10">
-          Make ads
+        <Button type="submit" className="h-10" disabled={pending || !url.trim()}>
+          {pending ? "Checking…" : "Make ads"}
         </Button>
       </div>
-      <div className="flex flex-wrap gap-2">
+      {state.error && (
+        <p id="store-url-error" role="alert" className="text-sm text-destructive">
+          {state.error}
+        </p>
+      )}
+      <div className="flex flex-wrap gap-2" aria-label="Example stores">
         {EXAMPLES.map((ex) => (
           <button key={ex} type="button" onClick={() => setUrl(ex)} className="rounded-full border px-3 py-1 text-xs text-muted-foreground hover:bg-muted">
             {ex}

@@ -48,3 +48,13 @@ describe("repository", () => {
     expect((await repo.loadMessages<{ id: string }>(c.id)).map((m) => m.id)).toEqual(["m1", "m2", "m3"]);
   });
 });
+
+describe("jsonb params across module instances", () => {
+  const ref = useFreshDb();
+  it("a json() marker built by another copy of lib/db/client (Next bundles) still stores the raw value", async () => {
+    await ref.db.query("create table t (j jsonb)");
+    const foreign = { [Symbol.for("ai-ads-manager.jsonb")]: true, value: ["#8FE8B3"] }; // what another bundle's json() returns
+    await ref.db.query("insert into t values ($1)", [foreign]);
+    expect((await ref.db.query<{ j: unknown }>("select j from t"))[0].j).toEqual(["#8FE8B3"]);
+  });
+});

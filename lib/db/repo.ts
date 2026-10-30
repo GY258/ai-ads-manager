@@ -307,3 +307,14 @@ export async function logToolRun(r: { tool: string; campaign_id?: string | null;
     [uid(), r.campaign_id ?? null, r.tool, json(r.input ?? null), json(r.output ?? null), r.error ?? null, r.duration_ms, r.model_calls ?? 0],
   );
 }
+
+/** "3", "#3" or a uuid → the ad. Numbers follow canvas order (creation order). */
+export async function resolveAdRef(campaignId: string, ref: string): Promise<{ ad: Ad; number: number } | null> {
+  const ads = await listAds(campaignId);
+  const n = ref.trim().match(/^#?(\d{1,3})$/)?.[1];
+  const i = n ? Number(n) - 1 : ads.findIndex((a) => a.id === ref.trim());
+  return ads[i] ? { ad: ads[i], number: i + 1 } : null;
+}
+export async function adNumber(ad: Pick<Ad, "id" | "campaign_id">): Promise<number> {
+  return (await listAds(ad.campaign_id)).findIndex((a) => a.id === ad.id) + 1;
+}

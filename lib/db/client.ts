@@ -11,22 +11,24 @@ export interface Db {
   close(): Promise<void>;
 }
 
-let current: Promise<Db> | null = null;
+// One connection per process, on globalThis: Next bundles pages, route handlers and server actions as separate
+// module instances, and two PGlite instances on one data dir silently diverge.
+const g = globalThis as unknown as { __adsDb?: Promise<Db> | null };
 
 export function getDb(): Promise<Db> {
-  if (!current) {
+  if (!g.__adsDb) {
     // A failed connect must not poison the process: clear it so the next call retries.
-    current = connect().catch((e) => {
-      current = null;
+    g.__adsDb = connect().catch((e) => {
+      g.__adsDb = null;
       throw e;
     });
   }
-  return current;
+  return g.__adsDb;
 }
 
 /** Tests inject an in-memory database. */
 export function setDb(db: Db | null) {
-  current = db ? Promise.resolve(db) : null;
+  g.__adsDb = db ? Promise.resolve(db) : null;
 }
 
 async function connect(): Promise<Db> {
@@ -86,16 +88,20 @@ export async function createPostgres(url: string): Promise<Db> {
   return wrap(sql);
 }
 
-/** Marks a parameter as jsonb so arrays aren't turned into Postgres array literals. */
-export class Json {
-  constructor(readonly value: unknown) {}
-}
-export const json = (v: unknown) => new Json(v);
+/**
+ * Marks a parameter as jsonb so arrays aren't turned into Postgres array literals.
+ * Branded with a global symbol, not a class: Next loads this module once per bundle, and the shared
+ * connection may come from another bundle, where `instanceof` would silently fail.
+ */
+const JSON_BRAND = Symbol.for("ai-ads-manager.jsonb");
+export type Json = { [JSON_BRAND]: true; value: unknown };
+export const json = (v: unknown): Json => ({ [JSON_BRAND]: true, value: v });
+const isJson = (v: unknown): v is Json => !!v && typeof v === "object" && (v as Record<symbol, unknown>)[JSON_BRAND] === true;
 
 /** Plain objects go in as JSON text; arrays as Postgres array literals so both drivers agree. */
 function toPgParam(v: unknown): unknown {
   if (v === undefined) return null;
-  if (v instanceof Json) return JSON.stringify(v.value);
+  if (isJson(v)) return JSON.stringify(v.value);
   if (Array.isArray(v)) return `{${v.map((x) => `"${String(x).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`).join(",")}}`;
   if (v && typeof v === "object" && !(v instanceof Date) && !(v instanceof Uint8Array)) return JSON.stringify(v);
   return v;
