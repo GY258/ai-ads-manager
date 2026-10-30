@@ -72,7 +72,10 @@ export async function createPostgres(url: string): Promise<Db> {
   const { default: pg } = await import("pg");
   // uuid[] isn't parsed by default; reuse the text[] parser.
   pg.types.setTypeParser(2951 as never, pg.types.getTypeParser(1009 as never));
-  const pool = new pg.Pool({ connectionString: url.replace(/[?&]sslmode=[^&]*/g, ""), ssl: { rejectUnauthorized: false }, max: 5, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 15_000 });
+  // pg treats sslmode=require as verify-full; Supabase's pooler cert needs rejectUnauthorized: false instead.
+  const u = new URL(url);
+  u.searchParams.delete("sslmode");
+  const pool = new pg.Pool({ connectionString: u.toString(), ssl: { rejectUnauthorized: false }, max: 5, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 15_000 });
   pool.on("error", (e) => console.error("[pg pool]", e.message));
   type Q = { query: (text: string, params?: unknown[]) => Promise<{ rows: unknown[] }> };
   const inflight = new Map<number, string>();
