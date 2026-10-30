@@ -3,7 +3,7 @@ import { structured } from "@/lib/adapters/llm";
 import { COPY_LIMITS } from "@/lib/agent/schemas";
 import type { Ad } from "@/lib/db/types";
 
-const schema = z.object({ headline: z.string(), subhead: z.string().nullish(), cta: z.string() });
+export const rewriteCopySchema = z.object({ headline: z.string(), subhead: z.string().nullable(), cta: z.string() });
 const clamp = (s: string, n: number) => s.trim().split(/\s+/).slice(0, n).join(" ");
 
 const ALT: Record<string, string[]> = {
@@ -20,7 +20,7 @@ export async function rewriteCopy(ad: Pick<Ad, "angle" | "headline" | "subhead" 
   const r = await structured({
     role: "subagent",
     name: "rewrite-copy",
-    schema,
+    schema: rewriteCopySchema,
     instructions: `Rewrite ad copy to apply the feedback. Voice: ${brandVoice ?? "on-brand"}. Headline ≤ ${COPY_LIMITS.headline} words, subhead ≤ ${COPY_LIMITS.subhead} words, CTA ≤ ${COPY_LIMITS.cta} words. Specific beats generic.`,
     prompt: `Angle: ${ad.angle}\nCurrent headline: ${ad.headline}\nCurrent subhead: ${ad.subhead ?? ""}\nCurrent CTA: ${ad.cta}\nFeedback: ${feedback}`,
     mock: () => {

@@ -26,7 +26,12 @@ export function promptText(prompt: LanguageModelV4Prompt): string {
     .join("\n");
 }
 
-function modelId(role: ModelRole) {
+/** Reasoning models (gpt-5*) default to slow, long thinking; these calls are short and structured. */
+export function speedOptions(model: string) {
+  return /^openai\/gpt-5/.test(model) ? { openai: { reasoningEffort: "minimal" } } : undefined;
+}
+
+export function modelId(role: ModelRole) {
   const e = env();
   return role === "chat" ? e.CHAT_MODEL : role === "subagent" ? e.SUBAGENT_MODEL : e.QA_MODEL;
 }
@@ -97,6 +102,7 @@ export async function structured<T>(args: StructuredArgs<T>): Promise<{ object: 
     instructions: args.instructions,
     messages: [{ role: "user", content }],
     output: Output.object({ schema: args.schema }),
+    providerOptions: speedOptions(modelId(args.role)),
   });
   const object = result.output as T;
   if (e.AI_MODE === "replay") {

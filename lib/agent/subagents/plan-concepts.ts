@@ -11,7 +11,7 @@ const conceptSchema = z.object({
   angle: z.enum(ANGLES),
   product_image_id: z.string(),
   headline: z.string(),
-  subhead: z.string().nullish(),
+  subhead: z.string().nullable(),
   cta: z.string(),
   layout: z.enum(LAYOUTS),
   scene_prompt: z.string().describe("Describes the scene only. NO text. Names which area stays empty, matching the layout."),
@@ -34,7 +34,7 @@ const INSTRUCTIONS = `You are a performance-marketing creative strategist planni
 For each concept pick an angle, one product_image_id from the list (never invent ids), short copy, a layout and a scene prompt.
 Rules:
 - Use at least 3 distinct angles across the set and spread concepts across the selected products.
-- Headline ≤ ${COPY_LIMITS.headline} words, subhead ≤ ${COPY_LIMITS.subhead} words (optional), CTA ≤ ${COPY_LIMITS.cta} words. Specific beats generic.
+- Headline ≤ ${COPY_LIMITS.headline} words, subhead ≤ ${COPY_LIMITS.subhead} words (or null), CTA ≤ ${COPY_LIMITS.cta} words. Specific beats generic.
 - scene_prompt describes only the photo scene around the real product (setting, props, light, mood). It must contain NO text, letters or logos,
   and it must say which area stays empty for text, matching the layout: top_headline → top 32% empty; bottom_card → bottom 30% empty; split → top 22% and bottom 14% empty.
 - Every constraint listed under "Constraints" is mandatory. Apply the recent feedback.

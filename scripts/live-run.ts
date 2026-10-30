@@ -3,7 +3,7 @@ import { chromium, type Page } from "@playwright/test";
 
 const BASE = process.env.BASE ?? "https://ai-ads-manager-eight.vercel.app";
 const STORE = process.argv[2] ?? "www.loopycases.com";
-const ADS_FIRST = Number(process.env.ADS_FIRST ?? "6");
+const ADS_FIRST = Number(process.env.ADS_FIRST ?? "1");
 const FEEDBACK = process.env.FEEDBACK ?? "Make it more premium: darker background, minimal props.";
 const DIR = `runs/${new Date().toISOString().slice(0, 10)}/live/${STORE.replace(/^www\./, "").split(".")[0]}`;
 const t0 = Date.now();
@@ -42,33 +42,42 @@ async function main() {
   while ((await picked.count()) > 2) await picked.last().click();
   await form.getByRole("button", { name: "Confirm brand kit" }).click();
   log("confirmed; waiting for ads");
-  const n1 = await waitReady(p, ADS_FIRST, 420_000);
+  const n1 = await waitReady(p, ADS_FIRST, 280_000);
   log(`${n1} ads ready`);
   await shot(p, "2-first-round");
 
-  const approveN = Math.min(3, n1);
-  for (let i = 1; i <= approveN; i++) {
-    const card = p.getByRole("article", { name: `Ad #${i}`, exact: true });
-    await card.hover();
-    await card.getByRole("button", { name: "Approve" }).click();
-    const confirm = card.getByRole("button", { name: "Approve anyway" });
-    if (await confirm.isVisible().catch(() => false)) await confirm.click();
-    await p.waitForTimeout(800);
+  // Approve what's ready, then keep going one batch at a time until 3 are approved.
+  const approveAll = async () => {
+    for (const card of await p.locator('section[aria-label="Creative canvas"] article[data-status="draft"]').all()) {
+      if (!(await card.locator('img[alt^="Ad #"]').count())) continue;
+      await card.hover();
+      await card.getByRole("button", { name: "Approve" }).click();
+      const confirm = card.getByRole("button", { name: "Approve anyway" });
+      if (await confirm.isVisible().catch(() => false)) await confirm.click();
+      await p.waitForTimeout(1000);
+    }
+    return p.locator('article[data-status="approved"]').count();
+  };
+  let approved = await approveAll();
+  log(`approved ${approved}`);
+  const prompts = [FEEDBACK, "Make one more ad."];
+  for (const msg of prompts) {
+    if (approved >= 3) break;
+    const have = await ready(p);
+    await p.getByLabel("Message").fill(msg);
+    await p.getByRole("button", { name: "Send" }).click();
+    log(`sent: ${msg}`);
+    const n = await waitReady(p, have + 1, 280_000);
+    log(`${n} ads ready`);
+    await p.waitForTimeout(3000);
+    await shot(p, `3-after-${prompts.indexOf(msg)}`);
+    approved = await approveAll();
+    log(`approved ${approved}`);
   }
-  log(`approved ${approveN}`);
-
-  await p.getByLabel("Message").fill(FEEDBACK);
-  await p.getByRole("button", { name: "Send" }).click();
-  log("feedback sent");
-  const n2 = await waitReady(p, n1 + 1, 420_000);
-  log(`${n2} ads ready after feedback`);
-  await p.waitForTimeout(4000);
-  await shot(p, "3-after-feedback");
 
   await p.reload();
   await p.waitForTimeout(5000);
-  const approved = await p.locator('article[data-status="approved"]').count();
-  log(`after reload: ${await ready(p)} ready, ${approved} approved`);
+  log(`after reload: ${await ready(p)} ready, ${await p.locator('article[data-status="approved"]').count()} approved`);
   await shot(p, "4-after-reload");
   const chat = await p.getByRole("region", { name: "Chat" }).innerText();
   const { writeFileSync } = await import("node:fs");

@@ -1,6 +1,6 @@
 import { after } from "next/server";
 import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, generateId, isStepCount, streamText, toUIMessageStream } from "ai";
-import { chatModel } from "@/lib/adapters/llm";
+import { chatModel, modelId, speedOptions } from "@/lib/adapters/llm";
 import { buildSystemPrompt } from "@/lib/agent/system-prompt";
 import { buildTools, type AppUIMessage } from "@/lib/agent/tools";
 import * as repo from "@/lib/db/repo";
@@ -29,6 +29,7 @@ export async function POST(req: Request) {
         messages: await convertToModelMessages(messages, { tools }),
         tools,
         stopWhen: isStepCount(8),
+        providerOptions: speedOptions(modelId("chat")),
       });
       writer.merge(toUIMessageStream({ stream: result.stream, sendReasoning: false }));
     },
