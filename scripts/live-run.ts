@@ -14,6 +14,13 @@ const shot = (p: Page, n: string) => p.screenshot({ path: `${DIR}/${n}.png` });
 async function ready(p: Page) {
   return p.locator('section[aria-label="Creative canvas"] article img[alt^="Ad #"]').count();
 }
+/** HITL: approve the newest concept-review form if one is waiting. */
+async function approveConcepts(p: Page, ms = 90_000) {
+  const btn = p.getByRole("button", { name: /Approve & generate/ }).last();
+  await btn.waitFor({ timeout: ms });
+  await btn.click();
+  log("concepts approved");
+}
 async function waitReady(p: Page, n: number, ms: number) {
   const end = Date.now() + ms;
   while (Date.now() < end) {
@@ -42,7 +49,8 @@ async function main() {
   const picked = form.getByRole("button", { pressed: true });
   while ((await picked.count()) > 2) await picked.last().click();
   await form.getByRole("button", { name: "Confirm brand kit" }).click();
-  log("confirmed; waiting for ads");
+  log("confirmed; waiting for concepts");
+  await approveConcepts(p);
   const n1 = await waitReady(p, ADS_FIRST, 280_000);
   log(`${n1} ads ready`);
   await shot(p, "2-first-round");
@@ -68,6 +76,7 @@ async function main() {
     await p.getByLabel("Message").fill(msg);
     await p.getByRole("button", { name: "Send" }).click();
     log(`sent: ${msg}`);
+    await approveConcepts(p).catch(() => log("no concept review shown"));
     const n = await waitReady(p, have + 1, 240_000);
     log(`${n} ads ready`);
     await p.waitForTimeout(3000);

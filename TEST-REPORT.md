@@ -6,7 +6,7 @@ Run them: `pnpm test` (unit + integration, PGlite, mock adapters) · `pnpm test:
 `pnpm test:e2e` (build + Playwright on `next start`, mock mode) · `E2E_BASE_URL=<url> npx playwright test` (deployed) ·
 `ALLOW_LIVE=1 pnpm smoke:live` (the only paid test).
 
-**Totals:** 107 unit/integration ✅ · 13 e2e locally ✅ · e2e on preview deployment: PREVIEW_RESULT · Lighthouse a11y 100 / 100 ✅ · live spend LIVE_SPEND
+**Totals:** 110 unit/integration ✅ · 13 e2e locally ✅ · e2e on preview deployment: ✅ 9 passed + 4 skipped (runtime-hook tests; pass locally) · Lighthouse a11y 100 / 100 ✅ · live spend $1.00 of the $2 test budget (25 fal images incl. QA retries, ledger in `spend_log`)
 
 ## Unit (no network, no DB) — `tests/unit/`
 
@@ -79,28 +79,29 @@ Run them: `pnpm test` (unit + integration, PGlite, mock adapters) · `pnpm test:
 
 | Spec item | Local | Preview deploy |
 | --- | --- | --- |
-| Home renders; Loopy URL → campaign screen | ✅ | E2E_1 |
-| Research progress → brand kit; edit color, pick 2, confirm | ✅ | E2E_2 |
-| Skeletons → 6 ready ads, images 1080×1920 | ✅ | E2E_3 |
-| Edit headline: image updates, history shows 2 | ✅ | E2E_3 |
-| Feedback + regenerate → new variant; approve 3; Approved tab = 3 | ✅ | E2E_3 |
+| Home renders; Loopy URL → campaign screen | ✅ | ✅ |
+| Research progress → brand kit; edit color, pick 2, confirm | ✅ | ✅ |
+| Skeletons → 6 ready ads, images 1080×1920 | ✅ | ✅ |
+| Edit headline: image updates, history shows 2 | ✅ | ✅ |
+| Feedback + regenerate → new variant; approve 3; Approved tab = 3 | ✅ | ✅ |
 | Reload mid-generation: done ads persist, rest finish | ✅ | skipped (needs runtime test hooks) |
 | Image failure → fallback ad with Retry | ✅ | skipped (needs runtime test hooks) |
-| Mobile viewport: tabs switch chat ↔ canvas | ✅ | E2E_4 |
-| Failure table: invalid URL · not Shopify + no Firecrawl · brand extraction fails · image fails twice · headline too long · stream drop | ✅ all 6 | E2E_5 |
+| Mobile viewport: tabs switch chat ↔ canvas | ✅ | ✅ |
+| Failure table: invalid URL · not Shopify + no Firecrawl · brand extraction fails · image fails twice · headline too long · stream drop | ✅ all 6 | ✅ (brand-extraction row skipped remotely: needs hooks) |
 
 ## Deployed checks and live runs
 
 | Item | Result |
 | --- | --- |
+| *(added)* Concept review (HITL): plan → user edits/removes/approves → only approved concepts render | ✅ route test, `generation.test.ts`, e2e helper, live run |
 | `/api/health` on the Vercel URL: env, DB, Storage ok | ✅ live and mock deployments |
-| e2e suite on the preview deployment (`AI_MODE=mock`) | PREVIEW_RESULT |
+| e2e suite on the preview deployment (`AI_MODE=mock`) | ✅ 9 passed + 4 skipped (runtime-hook tests; pass locally) |
 | `pnpm smoke:live` (research + 1 concept + 1 image + QA) | ✅ fal image, QA pass, `runs/2026-10-30/smoke/` |
 | Live research on Loopy (`AI_MODE=replay`), cache saved | ✅ 230 products, mint/navy kit, 1 `model_cache` row, 0 calls on replay |
 | Live scene QA: right product passes, wrong reference fails | ✅ (`pnpm qa:live`) |
 | Manual live run on Loopy: URL → 3 approved ads, survives reload | ✅ 3 approved in ~6 min |
-| Live feedback visibly changes the next generation | LIVE_FEEDBACK |
-| Five stores produce approved ads | FIVE_STORES |
+| Live feedback visibly changes the next generation | ✅ "more premium: darker background, minimal props" → ad regenerated darker with fewer props (`runs/2026-10-30/live/feedback/before-after.png`) |
+| Five stores produce approved ads | ✅ Loopy Cases, Allbirds, Ridge, Brooklinen, Tentree — each 1 live ad generated and approved (37–112 s per store) |
 | Lighthouse accessibility ≥ 90 on both screens | ✅ 100 / 100 |
 
 ## Bugs found by testing (all fixed, with a regression test)
@@ -116,7 +117,13 @@ Run them: `pnpm test` (unit + integration, PGlite, mock adapters) · `pnpm test:
 9. OpenAI strict mode rejected optional `subhead` (live, reported by Gary).
 10. Supabase transaction pooler dropped pipelined replies → multi-ad batches hung until the 300s timeout (live, reproduced with `test:pg`).
 11. gpt-5-nano described changes without calling tools → chat model back to gemini-2.5-flash + "act, don't describe" rule (live).
+12. Session pooler capped at 15 clients → production page loads failed (`EMAXCONNSESSION`, reported by Gary) → node-postgres Pool on the transaction pooler.
+13. Gemini also said "now I'll confirm the brand kit" without calling it → fixed handoffs enforced with `prepareStep` `toolChoice` (`flow.test.ts`).
 
 ## Open
 
-OPEN_ITEMS
+- Firecrawl has no key, so live brand extraction always uses the HTML-meta fallback (works; marked "please check").
+- AI Gateway is on the free tier: chat = `google/gemini-2.5-flash`, subagents = `openai/gpt-5-nano`, QA = `google/gemini-2.5-flash-lite`. Better models need a top-up + one env var.
+- Production batch size is 1 (`DEFAULT_AD_COUNT=1`) to keep test spend low; 6-ad batches now work (pooler fix) and can be re-enabled.
+- `pnpm test:pg` on a shared real DB has one test-isolation failure (repo test counts products other files created); app code is fine.
+- The fal bake-off (2–3 models) wasn't run, to stay inside the budget; `fal-ai/nano-banana/edit` at $0.0398/image is the only model tried.
