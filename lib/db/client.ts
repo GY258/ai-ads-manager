@@ -64,7 +64,14 @@ export async function createPglite(dataDir?: string): Promise<Db> {
 export async function createPostgres(url: string): Promise<Db> {
   const { default: postgres } = await import("postgres");
   // Supabase pooler runs in transaction mode: no prepared statements.
-  const sql = postgres(url, { prepare: false, max: 5, idle_timeout: 20, onnotice: () => {} });
+  const sql = postgres(url, {
+    prepare: false,
+    max: 5,
+    idle_timeout: 20,
+    onnotice: () => {},
+    // toPgParam already JSON-encodes; the default json serializer would encode it a second time.
+    types: { json: { to: 3802, from: [114, 3802], serialize: (x: unknown) => (typeof x === "string" ? x : JSON.stringify(x)), parse: (x: string) => JSON.parse(x) } },
+  });
   const wrap = (s: typeof sql): Db => ({
     async query<T>(text: string, params: unknown[] = []) {
       const rows = await s.unsafe(text, params.map(toPgParam) as never[]);
@@ -79,9 +86,16 @@ export async function createPostgres(url: string): Promise<Db> {
   return wrap(sql);
 }
 
+/** Marks a parameter as jsonb so arrays aren't turned into Postgres array literals. */
+export class Json {
+  constructor(readonly value: unknown) {}
+}
+export const json = (v: unknown) => new Json(v);
+
 /** Plain objects go in as JSON text; arrays as Postgres array literals so both drivers agree. */
 function toPgParam(v: unknown): unknown {
   if (v === undefined) return null;
+  if (v instanceof Json) return JSON.stringify(v.value);
   if (Array.isArray(v)) return `{${v.map((x) => `"${String(x).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`).join(",")}}`;
   if (v && typeof v === "object" && !(v instanceof Date) && !(v instanceof Uint8Array)) return JSON.stringify(v);
   return v;

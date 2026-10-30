@@ -1,15 +1,12 @@
-import { afterAll, describe, expect, it } from "vitest";
-import { getDb, setDb } from "@/lib/db/client";
+import { describe, expect, it } from "vitest";
 import { pingDb } from "@/lib/db/ping";
+import { useFreshDb } from "../support/db";
 
 describe("db", () => {
-  afterAll(async () => {
-    await (await getDb()).close();
-    setDb(null);
-  });
-  it("pings and applies migrations", async () => {
+  const ref = useFreshDb();
+  it("pings and applies every migration", async () => {
     expect(await pingDb()).toEqual({ ok: true });
-    const rows = await (await getDb()).query<{ name: string }>("select name from _migrations");
-    expect(rows.length).toBeGreaterThan(0);
+    const rows = await ref.db.query<{ name: string }>("select name from _migrations order by name");
+    expect(rows.map((r) => r.name)).toEqual(["0001_init.sql", "0002_schema.sql"]);
   });
 });
