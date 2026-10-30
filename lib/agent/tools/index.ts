@@ -1,6 +1,7 @@
 import { tool, type InferUITools, type UIMessage, type UIMessageStreamWriter } from "ai";
 import { z } from "zod";
 import { researchStore, researchStoreInput } from "./research-store";
+import { generateAds, generateAdsInput, planConcepts, planConceptsInput } from "./generation";
 import type { Progress } from "./types";
 
 export type ProgressData = { tool: string; toolCallId: string; message: string; data?: Record<string, unknown> };
@@ -39,6 +40,16 @@ export function buildTools(campaignId: string, writer: Writer = null) {
       inputSchema: z.object({ brandId: z.string().describe("brandId returned by researchStore") }),
       outputSchema: confirmBrandKitOutput,
       // No execute: human in the loop. The client renders BrandKitForm and returns the result with addToolOutput.
+    }),
+    planConcepts: tool({
+      description: "Plan ad concepts (angle, product photo, copy, layout, scene) for the confirmed brand kit and save them as draft ads. Applies all campaign constraints and recent feedback.",
+      inputSchema: planConceptsInput,
+      execute: (input, { toolCallId }) => planConcepts(input, { campaignId, progress: progressFor(writer, "planConcepts", toolCallId) }),
+    }),
+    generateAds: tool({
+      description: "Render images for planned ads (max 6 per call; default: all ads without an image). Generates the scene around the real product photo, then draws text with our compositor.",
+      inputSchema: generateAdsInput,
+      execute: (input, { toolCallId }) => generateAds(input, { campaignId, progress: progressFor(writer, "generateAds", toolCallId) }),
     }),
   };
 }

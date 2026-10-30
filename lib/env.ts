@@ -53,7 +53,7 @@ export function checkEnv(e: Env = env()): EnvCheck {
   }
   if (e.AI_MODE !== "mock") {
     if (!e.AI_GATEWAY_API_KEY && !e.VERCEL_OIDC_TOKEN) missing.push("AI_GATEWAY_API_KEY");
-    if (e.IMAGE_MODEL.startsWith("fal-ai/")) need("FAL_KEY");
+    if (e.IMAGE_MODEL.startsWith("fal-ai/")) need("FAL_KEY"); // other IMAGE_MODELs go through AI Gateway
     // Firecrawl is optional: the brand adapter falls back to HTML meta tags.
   }
   return { ok: missing.length === 0, missing, mode: e.AI_MODE };

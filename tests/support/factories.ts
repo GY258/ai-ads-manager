@@ -20,3 +20,15 @@ export async function researchedCampaign(url = "https://www.loopycases.com") {
   if (!result.ok) throw new Error(`research failed: ${result.error}`);
   return { campaign, result, messages };
 }
+
+/** Researched + confirmed Loopy campaign with the first `n` hero products selected. */
+export async function confirmedCampaign(n = 2) {
+  const { campaign } = await researchedCampaign();
+  const { confirmBrandKit } = await import("@/lib/campaign/brand-kit");
+  const brand = (await repo.getBrandByDomain("loopycases.com"))!;
+  const heroIds = (brand.source as unknown as { hero_product_ids: string[] }).hero_product_ids;
+  await confirmBrandKit(campaign.id, brand.id, { name: "Loopy Cases", colors: ["#8FE8B3", "#272D45"], font: "Exo 2", voice: "playful, bold", audience: "phone people", product_ids: heroIds.slice(0, n), goal: "Holiday gifting", tone_words: [] });
+  return { campaign: (await repo.getCampaign(campaign.id))!, brand: (await repo.getBrand(brand.id))! };
+}
+
+export const ctxFor = (campaignId: string) => ({ campaignId, ...captureProgress() });

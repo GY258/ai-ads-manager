@@ -141,7 +141,7 @@ describe("state summary", () => {
 describe("HITL resume", () => {
   useFreshDb();
   useMsw();
-  it("resuming with a confirmBrandKit tool result continues the agent", async () => {
+  it("resuming with a confirmBrandKit tool result continues to planConcepts and generateAds", async () => {
     const c = await newCampaign();
     const m1 = userMsg("Make ads for www.loopycases.com");
     const r1 = await postChat(c.id, [m1]);
@@ -154,6 +154,11 @@ describe("HITL resume", () => {
     const r2 = await postChat(c.id, [m1, a1]);
     expect(r2.res.status).toBe(200);
     expect(r2.chunks.some((x) => x.type === "error")).toBe(false);
-    expect(text(r2.chunks)).toMatch(/confirmed/i);
+    expect(toolCalls(r2.chunks)).toEqual(["planConcepts", "generateAds"]);
+    expect(text(r2.chunks)).toMatch(/6 ads are ready on the canvas/);
+    expect(r2.chunks.some((x) => x.type === "data-progress" && /Rendered ad 6\/6/.test(String((x.data as { message: string }).message)))).toBe(true);
+    const ads = await repo.listAds(c.id);
+    expect(ads).toHaveLength(6);
+    expect(ads.every((a) => a.current_variant_id)).toBe(true);
   });
 });
