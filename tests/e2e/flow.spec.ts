@@ -9,8 +9,10 @@ test("Loopy → 6 ads → edit headline → feedback regenerate → approve 3", 
   // Skeletons first, then 6 ready ads whose images are real 1080×1920 PNGs.
   await expect(canvas(page).getByTestId("skeleton").first()).toBeVisible();
   await waitForReady(page, 6);
-  const sizes = await readyImages(page).evaluateAll((imgs) => (imgs as HTMLImageElement[]).map((i) => [i.complete, i.naturalWidth, i.naturalHeight]));
-  expect(sizes).toEqual(Array(6).fill([true, 1080, 1920]));
+  // Remote storage can take a moment to deliver; wait for every image to finish loading.
+  await expect
+    .poll(() => readyImages(page).evaluateAll((imgs) => (imgs as HTMLImageElement[]).map((i) => [i.complete, i.naturalWidth, i.naturalHeight])), { timeout: 30_000 })
+    .toEqual(Array(6).fill([true, 1080, 1920]));
   await expect(page.getByText(/6 ads are ready on the canvas/)).toBeVisible();
 
   // Edit a headline in the drawer: the image updates and history shows 2 versions.

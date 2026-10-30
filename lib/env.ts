@@ -12,7 +12,7 @@ const schema = z
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
     SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
     POSTGRES_URL: z.string().optional(),
-    /** Session-mode pooler (port 5432). Preferred: the transaction pooler (6543) drops postgres.js's pipelined replies under concurrency. */
+    /** Session pooler (:5432): migrations and scripts only — capped at 15 clients, too few for serverless. */
     POSTGRES_URL_NON_POOLING: z.string().optional(),
     AI_GATEWAY_API_KEY: z.string().optional(),
     VERCEL_OIDC_TOKEN: z.string().optional(),
@@ -50,7 +50,7 @@ export function checkEnv(e: Env = env()): EnvCheck {
   const need = (name: keyof Env) => {
     if (!e[name]) missing.push(name);
   };
-  if (e.DB_DRIVER === "postgres" && !e.POSTGRES_URL_NON_POOLING) need("POSTGRES_URL");
+  if (e.DB_DRIVER === "postgres") need("POSTGRES_URL");
   if (e.STORAGE_DRIVER === "supabase") {
     need("NEXT_PUBLIC_SUPABASE_URL");
     need("SUPABASE_SERVICE_ROLE_KEY");

@@ -38,7 +38,7 @@ async function connect(): Promise<Db> {
     await migrate(db);
     return db;
   }
-  return createPostgres(e.POSTGRES_URL_NON_POOLING ?? e.POSTGRES_URL!);
+  return createPostgres(e.POSTGRES_URL ?? e.POSTGRES_URL_NON_POOLING!);
 }
 
 export async function createPglite(dataDir?: string): Promise<Db> {
@@ -63,38 +63,55 @@ export async function createPglite(dataDir?: string): Promise<Db> {
   return wrap(pg);
 }
 
+/**
+ * node-postgres Pool on Supabase's transaction pooler (:6543). One query at a time per client — no pipelining,
+ * which the transaction pooler silently broke with postgres.js — and the pooler multiplexes many serverless
+ * instances onto few server connections (the session pooler capped us at 15 clients and refused page loads).
+ */
 export async function createPostgres(url: string): Promise<Db> {
-  const { default: postgres } = await import("postgres");
-  // Supabase pooler runs in transaction mode: no prepared statements.
-  const sql = postgres(url, {
-    prepare: false,
-    max: 5,
-    idle_timeout: 20,
-    onnotice: () => {},
-    // toPgParam already JSON-encodes; the default json serializer would encode it a second time.
-    types: { json: { to: 3802, from: [114, 3802], serialize: (x: unknown) => (typeof x === "string" ? x : JSON.stringify(x)), parse: (x: string) => JSON.parse(x) } },
-  });
+  const { default: pg } = await import("pg");
+  // uuid[] isn't parsed by default; reuse the text[] parser.
+  pg.types.setTypeParser(2951 as never, pg.types.getTypeParser(1009 as never));
+  const pool = new pg.Pool({ connectionString: url.replace(/[?&]sslmode=[^&]*/g, ""), ssl: { rejectUnauthorized: false }, max: 5, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 15_000 });
+  pool.on("error", (e) => console.error("[pg pool]", e.message));
+  type Q = { query: (text: string, params?: unknown[]) => Promise<{ rows: unknown[] }> };
   const inflight = new Map<number, string>();
   let qid = 0;
   if (process.env.DB_DEBUG) setInterval(() => inflight.size && console.log("[db inflight]", [...inflight.values()].map((q) => q.slice(0, 90)).join(" || ")), 5000).unref();
-  const wrap = (s: typeof sql, label = "pool"): Db => ({
+  const wrap = (q: Q, label: string): Omit<Db, "tx" | "close"> => ({
     async query<T>(text: string, params: unknown[] = []) {
       const id = qid++;
       inflight.set(id, `${label}: ${text.replace(/\s+/g, " ")}`);
       try {
-        const rows = await s.unsafe(text, params.map(toPgParam) as never[]);
-        return rows as unknown as T[];
+        return (await q.query(text, params.map(toPgParam))).rows as T[];
       } finally {
         inflight.delete(id);
       }
     },
     async exec(script) {
-      await s.unsafe(script);
+      await q.query(script);
     },
-    tx: (fn) => sql.begin((t) => fn(wrap(t as unknown as typeof sql, "tx"))) as never,
-    close: () => sql.end(),
   });
-  return wrap(sql);
+  const db: Db = {
+    ...wrap(pool, "pool"),
+    async tx(fn) {
+      const client = await pool.connect();
+      try {
+        await client.query("begin");
+        const inner: Db = { ...wrap(client, "tx"), tx: (f) => f(inner), close: async () => {} };
+        const out = await fn(inner);
+        await client.query("commit");
+        return out;
+      } catch (e) {
+        await client.query("rollback").catch(() => {});
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+    close: () => pool.end(),
+  };
+  return db;
 }
 
 /**

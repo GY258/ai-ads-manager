@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@electric-sql/pglite", "sharp", "postgres"],
+  serverExternalPackages: ["@electric-sql/pglite", "sharp", "pg"],
   outputFileTracingIncludes: {
     "/**": ["./supabase/migrations/**", "./public/fonts/**", "./tests/fixtures/**"],
   },
