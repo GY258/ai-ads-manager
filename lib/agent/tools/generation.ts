@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { env } from "@/lib/env";
 import * as repo from "@/lib/db/repo";
 import { planConcepts as planSubagent } from "@/lib/agent/subagents/plan-concepts";
 import { copyProductImage } from "@/lib/research/copy-images";
@@ -21,13 +22,14 @@ async function confirmedContext(campaignId: string) {
 
 export const planConceptsInput = z.object({
   campaignId: z.string(),
-  count: z.number().int().min(1).max(12).default(6),
+  count: z.number().int().min(1).max(12).optional().describe("How many concepts. Omit to use the default."),
 });
 
 export async function planConcepts(input: z.infer<typeof planConceptsInput>, ctx: ToolContext) {
   return runTool("planConcepts", ctx.campaignId, input, async () => {
     const { campaign, brand } = await confirmedContext(ctx.campaignId);
-    ctx.progress(`Planning ${input.count} concepts`);
+    const count = input.count ?? env().DEFAULT_AD_COUNT;
+    ctx.progress(`Planning ${count} concepts`);
     const products = (await Promise.all(campaign.product_ids.map((id) => repo.getProduct(id)))).filter((p) => !!p);
     // Only images that are in our Storage can be used as references.
     for (const p of products) p.images = (await mapLimit(p.images.slice(0, 2), 2, (img) => copyProductImage(brand.id, img).catch(() => null))).filter((x) => !!x);
@@ -43,7 +45,7 @@ export async function planConcepts(input: z.infer<typeof planConceptsInput>, ctx
       constraints: campaign.constraints,
       feedback,
       existingHeadlines: existing.map((a) => a.headline),
-      count: input.count,
+      count,
     });
     const ads = await repo.insertAds(campaign.id, concepts);
     return {

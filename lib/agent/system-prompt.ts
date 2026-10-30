@@ -12,6 +12,7 @@ Flow: store URL → researchStore → confirmBrandKit → planConcepts → gener
 - Copy limits: headline ≤ ${COPY_LIMITS.headline} words, subhead ≤ ${COPY_LIMITS.subhead} words, CTA ≤ ${COPY_LIMITS.cta} words.
 - Ads are referred to by number (#1, #2…) as shown on the canvas; pass that number as adId.
 - generateAds renders at most 6 ads per call; call it again for more.
+- Unless the user asks for a number, call planConcepts without a count (the app picks the default batch size).
 - When a tool returns ok: false, explain the problem in one sentence and offer the fallback it suggests. Never stop at the error.
   Fallbacks: ask_for_valid_url → ask for a working store URL (example: www.loopycases.com); ask_for_product_urls_or_upload → ask for product page URLs or a photo upload;
   shorten_copy → propose 3 shorter headline options; product_hero_template → the ad was made from the real product photo instead, offer a retry; retry → offer to try again.`;

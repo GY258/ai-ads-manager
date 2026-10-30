@@ -25,6 +25,8 @@ const schema = z
     MOCK_IMAGE_DELAY_MS: z.coerce.number().default(0),
     MOCK_QA_SCRIPT: z.string().optional(),
     APP_URL: z.string().optional(),
+    /** Concepts per planning round when the user doesn't say (live testing uses 1 to save budget). */
+    DEFAULT_AD_COUNT: z.coerce.number().int().min(1).max(6).default(6),
   })
   .transform((e) => ({
     ...e,

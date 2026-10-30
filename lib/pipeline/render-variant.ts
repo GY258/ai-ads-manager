@@ -60,7 +60,12 @@ export async function renderVariant(adId: string, opts: RenderOptions): Promise<
 
   // 1. Row first.
   let variant = await repo.insertVariant({ ad_id: ad.id, parent_variant_id: parent?.id ?? null, layout, copy, prompt, scene_path: opts.mode === "compose" ? parent!.scene_path : null, model: opts.mode === "compose" ? parent!.model : null });
-  const say = (m: string) => opts.progress?.(m, { adId: ad.id, variantId: variant.id });
+  const t0 = Date.now();
+  const say = (m: string) => {
+    console.log(`[render ${variant.id.slice(0, 8)} +${Date.now() - t0}ms] ${m}`);
+    opts.progress?.(m, { adId: ad.id, variantId: variant.id });
+  };
+  say(`start mode=${opts.mode} ad #${adNumber}`);
 
   try {
     let fallback = opts.mode === "compose" ? parent!.model === "fallback" : false;
@@ -73,7 +78,9 @@ export async function renderVariant(adId: string, opts: RenderOptions): Promise<
       const img = await repo.getProductImage(ad.product_image_id);
       if (!img) throw new Error("product image missing");
       const stored = await copyProductImage(brand.id, img);
+      say("reference copied");
       const reference = await download(stored.storage_path!);
+      say(`reference downloaded (${reference.byteLength} bytes)`);
       const referenceType = stored.storage_path!.endsWith(".png") ? "image/png" : stored.storage_path!.endsWith(".webp") ? "image/webp" : "image/jpeg";
       const scenePath = `ad-scenes/${ad.id}/${variant.id}.png` as const;
 
@@ -81,6 +88,7 @@ export async function renderVariant(adId: string, opts: RenderOptions): Promise<
       const generate = async (p: string): Promise<{ bytes: Buffer; res: SceneResult } | null> => {
         for (let attempt = 1; attempt <= 2; attempt++) {
           try {
+            say(`image call attempt ${attempt}`);
             const res = await imageGenerator().generate({ prompt: p, referenceUrl: publicUrl(stored.storage_path!), referenceBytes: reference });
             // 3. Download immediately; the provider URL is never our only copy.
             const raw = res.bytes ?? (await fetchBytes(res.url!));

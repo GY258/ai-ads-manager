@@ -162,3 +162,17 @@ describe("HITL resume", () => {
     expect(ads.every((a) => a.current_variant_id)).toBe(true);
   });
 });
+
+describe("interrupted tool calls", () => {
+  useFreshDb();
+  useMsw();
+  it("a transcript with a dangling server tool call still gets a reply (no MissingToolResultsError)", async () => {
+    const c = await newCampaign();
+    const m1 = userMsg("hello");
+    const dangling = { id: "a1", role: "assistant", parts: [{ type: "step-start" }, { type: "tool-generateAds", toolCallId: "call_x", state: "input-available", input: { campaignId: c.id } }] } as unknown as AppUIMessage;
+    const r = await postChat(c.id, [m1, dangling, userMsg("are you there?")]);
+    expect(r.res.status).toBe(200);
+    expect(r.chunks.some((x) => x.type === "error")).toBe(false);
+    expect(text(r.chunks).length).toBeGreaterThan(0);
+  });
+});

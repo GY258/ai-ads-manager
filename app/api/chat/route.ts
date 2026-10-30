@@ -4,11 +4,14 @@ import { chatModel } from "@/lib/adapters/llm";
 import { buildSystemPrompt } from "@/lib/agent/system-prompt";
 import { buildTools, type AppUIMessage } from "@/lib/agent/tools";
 import * as repo from "@/lib/db/repo";
+import { closeInterruptedToolCalls } from "@/lib/agent/transcript";
 
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
-  const { messages, campaignId }: { messages: AppUIMessage[]; campaignId?: string } = await req.json();
+  const body: { messages: AppUIMessage[]; campaignId?: string } = await req.json();
+  const campaignId = body.campaignId;
+  const messages = closeInterruptedToolCalls(body.messages);
   if (!campaignId || !(await repo.getCampaign(campaignId))) return Response.json({ error: "unknown campaign" }, { status: 404 });
 
   // Postgres is the source of truth: save what the client sent (user message, HITL results) before anything risky.

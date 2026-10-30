@@ -71,6 +71,7 @@ const falGenerator: ImageGenerator = {
     const { fal } = await import("@fal-ai/client");
     fal.config({ credentials: e.FAL_KEY });
     const seed = req.seed ?? Math.floor(Math.random() * 2 ** 31);
+    console.log(`[fal] subscribe ${e.IMAGE_MODEL}`);
     const result = await fal.subscribe(e.IMAGE_MODEL, {
       input: { prompt: req.prompt, image_urls: [req.referenceUrl], aspect_ratio: "9:16", num_images: 1, output_format: "png", seed },
       logs: false,
