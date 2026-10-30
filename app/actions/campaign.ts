@@ -37,3 +37,13 @@ export async function submitBrandKit(campaignId: string, brandId: string, kit: B
     return { ok: false, error: (e as Error).message };
   }
 }
+
+export async function loadConcepts(campaignId: string, adIds: string[]) {
+  const { getConcepts } = await import("@/lib/campaign/concepts");
+  return getConcepts(campaignId, adIds);
+}
+
+export async function submitConcepts(campaignId: string, decisions: import("@/lib/campaign/concepts").ConceptDecision[]) {
+  const { finalizeConcepts } = await import("@/lib/campaign/concepts");
+  return finalizeConcepts(campaignId, decisions);
+}

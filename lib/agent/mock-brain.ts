@@ -62,9 +62,15 @@ export function mockAgentTurn(prompt: LanguageModelV4Prompt, tools: string[] = [
         return [text(`I read ${v.name}: ${counts.products} products. Check the brand kit below — edit anything that looks off, pick 1–3 products, and confirm.`), call("confirmBrandKit", { brandId: v.brandId })];
       }
       case "confirmBrandKit":
-        return has("planConcepts") ? [text("Brand kit confirmed. Planning 6 concepts across different angles…"), call("planConcepts", { campaignId, count: 6 })] : [text("Brand kit confirmed.")];
+        return has("planConcepts") ? [text("Brand kit confirmed. Planning concepts across different angles…"), call("planConcepts", { campaignId, count: 6 })] : [text("Brand kit confirmed.")];
       case "planConcepts":
-        return has("generateAds") ? [call("generateAds", { campaignId, adIds: (v.ads as { id: string }[]).map((a) => a.id) })] : [text("Concepts planned.")];
+        return has("reviewConcepts")
+          ? [text(`Here are ${(v.ads as unknown[]).length} concepts. Edit or remove any, then approve to generate.`), call("reviewConcepts", { adIds: (v.ads as { id: string }[]).map((a) => a.id) })]
+          : [text("Concepts planned.")];
+      case "reviewConcepts": {
+        const approved = (v.approved as { id: string }[] | undefined) ?? [];
+        return approved.length && has("generateAds") ? [call("generateAds", { campaignId, adIds: approved.map((a) => a.id) })] : [text("No concepts approved — tell me what to plan instead.")];
+      }
       case "generateAds": {
         const s = v.summary as { ready: number; fallback: number; failed: number } | undefined;
         const fb = s?.fallback ? ` ${s.fallback} used the product-photo fallback — hit retry on those to try the scene again.` : "";

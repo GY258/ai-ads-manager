@@ -141,7 +141,7 @@ describe("state summary", () => {
 describe("HITL resume", () => {
   useFreshDb();
   useMsw();
-  it("resuming with a confirmBrandKit tool result continues to planConcepts and generateAds", async () => {
+  it("resuming with a confirmBrandKit result plans concepts and pauses for review; approving them generates the ads", async () => {
     const c = await newCampaign();
     const m1 = userMsg("Make ads for www.loopycases.com");
     const r1 = await postChat(c.id, [m1]);
@@ -154,11 +154,25 @@ describe("HITL resume", () => {
     const r2 = await postChat(c.id, [m1, a1]);
     expect(r2.res.status).toBe(200);
     expect(r2.chunks.some((x) => x.type === "error")).toBe(false);
-    expect(toolCalls(r2.chunks)).toEqual(["planConcepts", "generateAds"]);
-    expect(text(r2.chunks)).toMatch(/6 ads are ready on the canvas/);
-    expect(r2.chunks.some((x) => x.type === "data-progress" && /Rendered ad 6\/6/.test(String((x.data as { message: string }).message)))).toBe(true);
-    const ads = await repo.listAds(c.id);
+    expect(toolCalls(r2.chunks)).toEqual(["planConcepts", "reviewConcepts"]);
+    expect(r2.chunks.filter((x) => x.type === "tool-output-available")).toHaveLength(1); // review waits for the user
+    let ads = await repo.listAds(c.id);
     expect(ads).toHaveLength(6);
+    expect(ads.every((a) => !a.current_variant_id)).toBe(true); // nothing rendered before approval
+
+    // The user edits one concept, removes one, approves the rest.
+    const { finalizeConcepts } = await import("@/lib/campaign/concepts");
+    const review = await finalizeConcepts(c.id, ads.map((a, i) => ({ id: a.id, keep: i !== 5, headline: i === 0 ? "Hold on tight" : a.headline, subhead: a.subhead, cta: a.cta, layout: a.layout })));
+    if (!review.ok) throw new Error("review failed");
+    const a2 = assistantFrom(r2.chunks);
+    const rp = a2.parts.find((p) => p.type === "tool-reviewConcepts") as unknown as Record<string, unknown>;
+    Object.assign(rp, { state: "output-available", output: review });
+    const r3 = await postChat(c.id, [m1, a1, a2]);
+    expect(toolCalls(r3.chunks)).toEqual(["generateAds"]);
+    expect(text(r3.chunks)).toMatch(/5 ads are ready on the canvas/);
+    ads = await repo.listAds(c.id);
+    expect(ads).toHaveLength(5);
+    expect(ads[0].headline).toBe("Hold on tight");
     expect(ads.every((a) => a.current_variant_id)).toBe(true);
   });
 });

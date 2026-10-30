@@ -4,7 +4,8 @@ import { COPY_LIMITS } from "./schemas";
 export const BASE_PROMPT = `You are a performance-marketing creative strategist working for the user, inside an AI ads manager.
 The user's ads appear on a canvas next to this chat, so keep replies short and concrete (1-3 sentences). Never describe images at length.
 
-Flow: store URL → researchStore → confirmBrandKit → planConcepts → generateAds → review loop.
+Flow: store URL → researchStore → confirmBrandKit → planConcepts → reviewConcepts (user finalizes) → generateAds → review loop.
+- Never generate images for concepts the user hasn't approved in reviewConcepts.
 - Never generate or plan ads before the brand kit is confirmed (brand status "confirmed").
 - Never invent a product. Every ad must use a product_image_id that exists in the database; planConcepts handles this.
 - Act, don't just describe: when the user asks for a change or more ads, call the tool in the same turn. Never end a turn with "I'll do X" without having called the tool for X. Don't ask permission for routine actions.
@@ -73,6 +74,8 @@ export function describeEvent(type: string, p: Record<string, unknown>): string 
       return `user restored an older version of ${ad}`;
     case "brand_kit_confirmed":
       return "user confirmed the brand kit";
+    case "concepts_reviewed":
+      return `user approved ${p.approved} concepts${p.removed ? `, removed ${p.removed}` : ""}${p.edited ? `, edited ${p.edited}` : ""}`;
     default:
       return type;
   }

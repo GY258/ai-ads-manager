@@ -14,6 +14,14 @@ function progressFor(writer: Writer, toolName: string, toolCallId: string): Prog
   return (message, data) => writer?.write({ type: "data-progress", id: `${toolCallId}-${n++}`, data: { tool: toolName, toolCallId, message, data } satisfies ProgressData });
 }
 
+export const reviewConceptsOutput = z.object({
+  ok: z.boolean(),
+  approved: z.array(z.object({ id: z.string(), number: z.number(), headline: z.string() })).optional(),
+  removed: z.number().optional(),
+  edited: z.number().optional(),
+  error: z.string().optional(),
+});
+
 export const confirmBrandKitOutput = z.object({
   ok: z.boolean(),
   brandId: z.string().optional(),
@@ -47,8 +55,14 @@ export function buildTools(campaignId: string, writer: Writer = null) {
       inputSchema: planConceptsInput,
       execute: (input, { toolCallId }) => planConcepts(input, { campaignId, progress: progressFor(writer, "planConcepts", toolCallId) }),
     }),
+    reviewConcepts: tool({
+      description: "Show the planned concepts to the user to edit, remove or approve before any image is generated. The user's decision comes back as the result. Call right after planConcepts with its ad ids.",
+      inputSchema: z.object({ adIds: z.array(z.string()).describe("ids returned by planConcepts") }),
+      outputSchema: reviewConceptsOutput,
+      // No execute: human in the loop. The client renders ConceptReview and returns the result with addToolOutput.
+    }),
     generateAds: tool({
-      description: "Render images for planned ads (max 6 per call; default: all ads without an image). Generates the scene around the real product photo, then draws text with our compositor.",
+      description: "Render images for approved concepts (max 6 per call; default: all ads without an image). Only call after the user approved concepts in reviewConcepts. Generates the scene around the real product photo, then draws text with our compositor.",
       inputSchema: generateAdsInput,
       execute: (input, { toolCallId }) => generateAds(input, { campaignId, progress: progressFor(writer, "generateAds", toolCallId) }),
     }),

@@ -12,6 +12,7 @@ import type { AppUIMessage, ProgressData } from "@/lib/agent/tools";
 import { BrandKitForm } from "./brand-kit-form";
 import { ConfirmedKit, ResearchSummary, ToolCard, type LooseToolPart } from "./tool-cards";
 import { GenerationStrip } from "./generation-strip";
+import { ConceptReview } from "./concept-review";
 
 export function ChatPanel({ campaignId, storeUrl, initialMessages, onActivity }: { campaignId: string; storeUrl: string; initialMessages: AppUIMessage[]; onActivity?: () => void }) {
   const search = useSearchParams();
@@ -61,6 +62,20 @@ export function ChatPanel({ campaignId, storeUrl, initialMessages, onActivity }:
                             />
                           )}
                           {output && <ConfirmedKit output={output} />}
+                        </ToolCard>
+                      );
+                    }
+                    if (part.type === "tool-reviewConcepts") {
+                      return (
+                        <ToolCard key={part.toolCallId} part={part} progress={mine}>
+                          {part.state === "input-available" && (
+                            <ConceptReview
+                              campaignId={campaignId}
+                              adIds={(part.input as { adIds: string[] }).adIds}
+                              onDone={(r) => addToolOutput({ tool: "reviewConcepts", toolCallId: part.toolCallId, output: r })}
+                            />
+                          )}
+                          {output && <p className="text-xs text-muted-foreground">Approved {(output.approved as unknown[] | undefined)?.length ?? 0} concepts{output.removed ? `, removed ${output.removed}` : ""}{output.edited ? `, edited ${output.edited}` : ""}.</p>}
                         </ToolCard>
                       );
                     }

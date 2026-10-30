@@ -9,7 +9,8 @@ import type { ModelMessage } from "ai";
 const NEXT: Record<string, string> = {
   researchStore: "confirmBrandKit",
   confirmBrandKit: "planConcepts",
-  planConcepts: "generateAds",
+  planConcepts: "reviewConcepts",
+  reviewConcepts: "generateAds",
 };
 
 export function requiredNextTool(messages: ModelMessage[]): string | null {
@@ -18,8 +19,9 @@ export function requiredNextTool(messages: ModelMessage[]): string | null {
   for (const part of [...last.content].reverse()) {
     if (part.type !== "tool-result") continue;
     const out = part.output as { type: string; value?: unknown };
-    const value = (out.type === "json" ? out.value : null) as { ok?: boolean; adId?: string; scope?: string } | null;
+    const value = (out.type === "json" ? out.value : null) as { ok?: boolean; scope?: string; approved?: unknown[] } | null;
     if (!value || value.ok !== true) return null;
+    if (part.toolName === "reviewConcepts" && !value.approved?.length) return null;
     if (part.toolName === "recordFeedback") return value.scope === "campaign" ? "planConcepts" : null;
     return NEXT[part.toolName] ?? null;
   }

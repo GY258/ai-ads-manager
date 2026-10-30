@@ -10,13 +10,15 @@ describe("required next tool", () => {
   it("forces the fixed handoffs after successful steps", () => {
     expect(requiredNextTool(result("researchStore", { ok: true }))).toBe("confirmBrandKit");
     expect(requiredNextTool(result("confirmBrandKit", { ok: true }))).toBe("planConcepts");
-    expect(requiredNextTool(result("planConcepts", { ok: true }))).toBe("generateAds");
+    expect(requiredNextTool(result("planConcepts", { ok: true }))).toBe("reviewConcepts");
+    expect(requiredNextTool(result("reviewConcepts", { ok: true, approved: [{ id: "a" }] }))).toBe("generateAds");
     expect(requiredNextTool(result("recordFeedback", { ok: true, scope: "campaign" }))).toBe("planConcepts");
   });
   it("leaves the agent free after failures, ad-level feedback, and user messages", () => {
     expect(requiredNextTool(result("researchStore", { ok: false, fallback: "ask_for_valid_url" }))).toBeNull();
     expect(requiredNextTool(result("recordFeedback", { ok: true, scope: "ad" }))).toBeNull();
     expect(requiredNextTool(result("generateAds", { ok: true }))).toBeNull();
+    expect(requiredNextTool(result("reviewConcepts", { ok: true, approved: [] }))).toBeNull();
     expect(requiredNextTool([{ role: "user", content: "hi" }])).toBeNull();
   });
 });

@@ -10,6 +10,7 @@ export type LooseToolPart = { type: string; toolCallId: string; state: string; i
 const LABELS: Record<string, string> = {
   researchStore: "Researching store",
   confirmBrandKit: "Brand kit",
+  reviewConcepts: "Review concepts",
   planConcepts: "Planning concepts",
   generateAds: "Generating ads",
   regenerateAd: "Regenerating ad",
@@ -61,7 +62,7 @@ export function ToolCard({ part, progress, children }: { part: LooseToolPart; pr
         <span>{LABELS[name] ?? name}</span>
         <span className="text-muted-foreground">{running ? "running" : output?.ok === false ? "needs attention" : part.state === "output-error" ? "error" : "done"}</span>
       </div>
-      {name !== "confirmBrandKit" && <ProgressList items={progress} running={running} />}
+      {name !== "confirmBrandKit" && name !== "reviewConcepts" && <ProgressList items={progress} running={running} />}
       {output?.ok === false && <Fail output={output} />}
       {part.state === "output-error" && <p className="text-xs text-destructive">{part.errorText}</p>}
       {children}

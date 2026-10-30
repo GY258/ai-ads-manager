@@ -22,6 +22,15 @@ export async function onboard(page: Page) {
   await form.getByRole("button", { pressed: true }).first().click();
   await form.getByRole("button", { name: "Confirm brand kit" }).click();
   await expect(page.getByText(/^Confirmed ·/)).toBeVisible();
+  await approveConcepts(page);
+}
+
+/** HITL: approve whatever concepts the agent planned (optionally editing the first headline). */
+export async function approveConcepts(page: Page, firstHeadline?: string) {
+  const form = page.getByRole("form", { name: "Review concepts" }).last();
+  await expect(form).toBeVisible({ timeout: 30_000 });
+  if (firstHeadline) await form.getByLabel(/Concept \d+ headline/).first().fill(firstHeadline);
+  await form.getByRole("button", { name: /Approve & generate/ }).click();
 }
 
 export const canvas = (page: Page) => page.getByRole("region", { name: "Creative canvas" });

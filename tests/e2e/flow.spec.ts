@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { canvas, cards, flags, onboard, readyImages, remote, resetFlags, waitForReady } from "./helpers";
+import { approveConcepts, canvas, cards, flags, onboard, readyImages, remote, resetFlags, waitForReady } from "./helpers";
 
 test.beforeEach(async ({ request }) => resetFlags(request));
 
@@ -54,28 +54,33 @@ test("campaign feedback in chat visibly changes the next generation", async ({ p
   const scenePrompt = async () => (await page.request.get(page.url().replace("/c/", "/api/campaigns/"))).json();
   await page.getByLabel("Message").fill("Make it more premium and avoid busy backgrounds");
   await page.getByRole("button", { name: "Send" }).click();
+  await approveConcepts(page);
   await waitForReady(page, 9);
   const view = await scenePrompt();
   const newest = view.ads.slice(-3);
   expect(view.campaign.constraints).toContain("Make it more premium and avoid busy backgrounds");
   for (const a of newest) expect(a.current.status).toBe("ready");
-  // The new scenes are rendered from a prompt carrying the rule (dark premium palette in the mock model).
-  const dark = await page.evaluate(async (url) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = url;
-    await img.decode();
-    const c = document.createElement("canvas");
-    c.width = 40;
-    c.height = 70;
-    const ctx = c.getContext("2d")!;
-    ctx.drawImage(img, 0, 0, 40, 70);
-    const d = ctx.getImageData(0, 30, 40, 10).data;
-    let sum = 0;
-    for (let i = 0; i < d.length; i += 4) sum += d[i] + d[i + 1] + d[i + 2];
-    return sum / (d.length / 4) / 3;
-  }, newest[0].current.scene_url);
-  expect(dark).toBeLessThan(110);
+  // The new scenes come from a prompt carrying the rule: whole-image brightness drops vs the first round.
+  const brightness = (url: string) =>
+    page.evaluate(async (u) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = u;
+      await img.decode();
+      const c = document.createElement("canvas");
+      c.width = 54;
+      c.height = 96;
+      const ctx = c.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, 54, 96);
+      const d = ctx.getImageData(0, 0, 54, 96).data;
+      let sum = 0;
+      for (let i = 0; i < d.length; i += 4) sum += d[i] + d[i + 1] + d[i + 2];
+      return sum / (d.length / 4) / 3;
+    }, url);
+  const before = await Promise.all(view.ads.slice(0, 3).map((a: { current: { scene_url: string } }) => brightness(a.current.scene_url)));
+  const after = await Promise.all(newest.map((a: { current: { scene_url: string } }) => brightness(a.current.scene_url)));
+  const mean = (xs: number[]) => xs.reduce((s, x) => s + x, 0) / xs.length;
+  expect(mean(after)).toBeLessThan(mean(before) - 40);
 });
 
 test("reload mid-generation: completed ads persist and the rest finish", async ({ page, request }) => {

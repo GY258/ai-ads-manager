@@ -103,3 +103,22 @@ describe("planConcepts + generateAds", () => {
     expect(ads.every((a) => /clean minimal/.test(a.scene_prompt))).toBe(true);
   });
 });
+
+describe("concept review (HITL)", () => {
+  useFreshDb();
+  useMsw();
+  it("saves edits, deletes removed concepts, and rejects copy over the limits", async () => {
+    const { finalizeConcepts } = await import("@/lib/campaign/concepts");
+    const { campaign } = await confirmedCampaign();
+    await planConcepts({ campaignId: campaign.id, count: 3 }, ctxFor(campaign.id));
+    const ads = await repo.listAds(campaign.id);
+    const decide = (overrides: Record<number, object>) => ads.map((a, i) => ({ id: a.id, keep: true, headline: a.headline, subhead: a.subhead, cta: a.cta, layout: a.layout, ...overrides[i] }));
+    expect(await finalizeConcepts(campaign.id, decide({ 0: { headline: "one two three four five six seven" } }))).toMatchObject({ ok: false });
+    const r = await finalizeConcepts(campaign.id, decide({ 0: { headline: "Grip it", layout: "split" }, 2: { keep: false } }));
+    expect(r).toMatchObject({ ok: true, removed: 1, edited: 1 });
+    const after = await repo.listAds(campaign.id);
+    expect(after).toHaveLength(2);
+    expect(after[0]).toMatchObject({ headline: "Grip it", layout: "split" });
+    expect(r.ok && r.approved.map((a) => a.number)).toEqual([1, 2]);
+  });
+});
