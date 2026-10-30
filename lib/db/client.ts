@@ -38,7 +38,7 @@ async function connect(): Promise<Db> {
     await migrate(db);
     return db;
   }
-  return createPostgres(e.POSTGRES_URL!);
+  return createPostgres(e.POSTGRES_URL_NON_POOLING ?? e.POSTGRES_URL!);
 }
 
 export async function createPglite(dataDir?: string): Promise<Db> {
@@ -74,15 +74,24 @@ export async function createPostgres(url: string): Promise<Db> {
     // toPgParam already JSON-encodes; the default json serializer would encode it a second time.
     types: { json: { to: 3802, from: [114, 3802], serialize: (x: unknown) => (typeof x === "string" ? x : JSON.stringify(x)), parse: (x: string) => JSON.parse(x) } },
   });
-  const wrap = (s: typeof sql): Db => ({
+  const inflight = new Map<number, string>();
+  let qid = 0;
+  if (process.env.DB_DEBUG) setInterval(() => inflight.size && console.log("[db inflight]", [...inflight.values()].map((q) => q.slice(0, 90)).join(" || ")), 5000).unref();
+  const wrap = (s: typeof sql, label = "pool"): Db => ({
     async query<T>(text: string, params: unknown[] = []) {
-      const rows = await s.unsafe(text, params.map(toPgParam) as never[]);
-      return rows as unknown as T[];
+      const id = qid++;
+      inflight.set(id, `${label}: ${text.replace(/\s+/g, " ")}`);
+      try {
+        const rows = await s.unsafe(text, params.map(toPgParam) as never[]);
+        return rows as unknown as T[];
+      } finally {
+        inflight.delete(id);
+      }
     },
     async exec(script) {
       await s.unsafe(script);
     },
-    tx: (fn) => sql.begin((t) => fn(wrap(t as unknown as typeof sql))) as never,
+    tx: (fn) => sql.begin((t) => fn(wrap(t as unknown as typeof sql, "tx"))) as never,
     close: () => sql.end(),
   });
   return wrap(sql);

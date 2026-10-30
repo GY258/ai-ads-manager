@@ -4,6 +4,7 @@ import { chromium, type Page } from "@playwright/test";
 const BASE = process.env.BASE ?? "https://ai-ads-manager-eight.vercel.app";
 const STORE = process.argv[2] ?? "www.loopycases.com";
 const ADS_FIRST = Number(process.env.ADS_FIRST ?? "1");
+const TARGET = Number(process.env.TARGET ?? "3");
 const FEEDBACK = process.env.FEEDBACK ?? "Make it more premium: darker background, minimal props.";
 const DIR = `runs/${new Date().toISOString().slice(0, 10)}/live/${STORE.replace(/^www\./, "").split(".")[0]}`;
 const t0 = Date.now();
@@ -60,14 +61,14 @@ async function main() {
   };
   let approved = await approveAll();
   log(`approved ${approved}`);
-  const prompts = [FEEDBACK, "Make one more ad."];
+  const prompts = [FEEDBACK, "Make one more ad.", "Make one more ad."];
   for (const msg of prompts) {
-    if (approved >= 3) break;
+    if (approved >= TARGET) break;
     const have = await ready(p);
     await p.getByLabel("Message").fill(msg);
     await p.getByRole("button", { name: "Send" }).click();
     log(`sent: ${msg}`);
-    const n = await waitReady(p, have + 1, 280_000);
+    const n = await waitReady(p, have + 1, 240_000);
     log(`${n} ads ready`);
     await p.waitForTimeout(3000);
     await shot(p, `3-after-${prompts.indexOf(msg)}`);

@@ -10,7 +10,12 @@ export default defineConfig({
   expect: { timeout: 20_000 },
   fullyParallel: false,
   workers: 1,
-  use: { baseURL: external ?? `http://localhost:${PORT}`, trace: "retain-on-failure" },
+  use: {
+    baseURL: external ?? `http://localhost:${PORT}`,
+    trace: "retain-on-failure",
+    // Protected preview deployments: pass the local dev OIDC token as a Trusted Sources header (never printed).
+    extraHTTPHeaders: external && process.env.VERCEL_OIDC_TOKEN ? { "x-vercel-trusted-oidc-idp-token": process.env.VERCEL_OIDC_TOKEN } : undefined,
+  },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1400, height: 900 } } }],
   webServer: external
     ? undefined
