@@ -11,7 +11,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   use: { baseURL: external ?? `http://localhost:${PORT}`, trace: "retain-on-failure" },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1400, height: 900 } } }],
   webServer: external
     ? undefined
     : {
@@ -26,6 +26,7 @@ export default defineConfig({
           STORAGE_DRIVER: "local",
           LOCAL_STORAGE_DIR: "runs/e2e/storage",
           MOCK_IMAGE_DELAY_MS: "400",
+          ENABLE_TEST_HOOKS: "1",
         },
       },
 });

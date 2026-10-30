@@ -2,6 +2,7 @@ import { tool, type InferUITools, type UIMessage, type UIMessageStreamWriter } f
 import { z } from "zod";
 import { researchStore, researchStoreInput } from "./research-store";
 import { generateAds, generateAdsInput, planConcepts, planConceptsInput } from "./generation";
+import { editAdCopy, editAdCopyInput, recordFeedback, recordFeedbackInput, regenerateAd, regenerateAdInput, setAdStatus, setAdStatusInput } from "./manage";
 import type { Progress } from "./types";
 
 export type ProgressData = { tool: string; toolCallId: string; message: string; data?: Record<string, unknown> };
@@ -50,6 +51,26 @@ export function buildTools(campaignId: string, writer: Writer = null) {
       description: "Render images for planned ads (max 6 per call; default: all ads without an image). Generates the scene around the real product photo, then draws text with our compositor.",
       inputSchema: generateAdsInput,
       execute: (input, { toolCallId }) => generateAds(input, { campaignId, progress: progressFor(writer, "generateAds", toolCallId) }),
+    }),
+    regenerateAd: tool({
+      description: "Apply feedback to one ad. scope=copy rewrites the text and re-composes (no new image); scene/both generate a new image from the previous prompt plus the feedback.",
+      inputSchema: regenerateAdInput,
+      execute: (input, { toolCallId }) => regenerateAd(input, { campaignId, progress: progressFor(writer, "regenerateAd", toolCallId) }),
+    }),
+    editAdCopy: tool({
+      description: "Set exact headline/subhead/CTA/layout on one ad and re-compose from its existing image. Zero model calls.",
+      inputSchema: editAdCopyInput,
+      execute: (input, { toolCallId }) => editAdCopy(input, { campaignId, progress: progressFor(writer, "editAdCopy", toolCallId) }),
+    }),
+    setAdStatus: tool({
+      description: "Approve, reject, or reset an ad.",
+      inputSchema: setAdStatusInput,
+      execute: (input, { toolCallId }) => setAdStatus(input, { campaignId, progress: progressFor(writer, "setAdStatus", toolCallId) }),
+    }),
+    recordFeedback: tool({
+      description: "Save campaign-wide feedback as concrete constraints that every future planConcepts/regenerateAd call must follow.",
+      inputSchema: recordFeedbackInput,
+      execute: (input, { toolCallId }) => recordFeedback(input, { campaignId, progress: progressFor(writer, "recordFeedback", toolCallId) }),
     }),
   };
 }

@@ -1,10 +1,14 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import opentype from "opentype.js";
+import * as opentypeNs from "opentype.js";
+import type { Font } from "opentype.js";
+
+// Next/Vite load the ESM build (named exports); plain Node (tsx scripts) loads CJS (default export).
+const opentype = ((opentypeNs as unknown as { default?: typeof opentypeNs }).default ?? opentypeNs) as typeof opentypeNs;
 import { FONTS, closestFont, type FontFamily } from "./font-catalog";
 
 const DIR = path.join(process.cwd(), "public", "fonts");
-const cache = new Map<string, { data: Buffer; font: opentype.Font }>();
+const cache = new Map<string, { data: Buffer; font: Font }>();
 
 function load(file: string) {
   let hit = cache.get(file);
@@ -32,9 +36,22 @@ export function satoriFonts(family: FontFamily) {
   ];
 }
 
+/**
+ * Advance width from glyph metrics + pair kerning. Deliberately skips GSUB shaping: opentype.js throws on
+ * some lookup formats (Inter's), and ligatures don't change widths enough to matter for line fitting.
+ */
 export function measure(text: string, family: FontFamily, sizePx: number, bold = true): number {
   const { font } = bold ? fontFiles(family).bold : fontFiles(family).regular;
-  return font.getAdvanceWidth(text, sizePx, { kerning: true });
+  const scale = sizePx / font.unitsPerEm;
+  let width = 0;
+  let prev: ReturnType<Font["charToGlyph"]> | null = null;
+  for (const ch of text) {
+    const g = font.charToGlyph(ch);
+    if (prev) width += font.getKerningValue(prev, g);
+    width += g.advanceWidth ?? 0;
+    prev = g;
+  }
+  return width * scale;
 }
 
 export { closestFont };

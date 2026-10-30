@@ -5,6 +5,8 @@ import { composeAd } from "@/lib/compose/compose";
 import { pickTreatment, sampleZone, textContrast, zonesFor, TEXT_DARK, TEXT_LIGHT } from "@/lib/compose/contrast";
 import { fitHeadline, HEADLINE_MAX_PX } from "@/lib/compose/fit";
 import { buildHeroScene } from "@/lib/compose/scene-builder";
+import { FONTS } from "@/lib/compose/font-catalog";
+import { measure } from "@/lib/compose/fonts";
 
 const scene = (n: string) => readFileSync(`tests/fixtures/scenes/${n}.png`);
 const logo = readFileSync("tests/fixtures/loopycases/images/logo.png");
@@ -105,5 +107,13 @@ describe("golden snapshots", () => {
     let diff = 0;
     for (let i = 0; i < a.length; i++) diff += Math.abs(a[i] - b[i]);
     expect(diff / a.length).toBeLessThan(1.5); // mean abs difference per channel (0-255)
+  });
+});
+
+describe("every bundled font", () => {
+  it.each(FONTS.map((f) => f.family))("%s measures and composes", async (family) => {
+    expect(measure("Never drop your phone again", family, 100)).toBeGreaterThan(500);
+    const r = await composeAd({ scene: scene("white"), copy, kit: { ...kit, font: family }, layout: "bottom_card", logo });
+    expect(r.ok).toBe(true);
   });
 });

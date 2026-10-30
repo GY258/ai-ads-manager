@@ -318,3 +318,6 @@ export async function resolveAdRef(campaignId: string, ref: string): Promise<{ a
 export async function adNumber(ad: Pick<Ad, "id" | "campaign_id">): Promise<number> {
   return (await listAds(ad.campaign_id)).findIndex((a) => a.id === ad.id) + 1;
 }
+export async function markFeedbackApplied(id: string) {
+  await (await getDb()).query(`update feedback set applied = true where id = $1`, [id]);
+}

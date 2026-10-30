@@ -7,10 +7,10 @@ test("home → research progress → brand kit form → edit a color, pick 2 pro
   await page.waitForURL(/\/c\/[0-9a-f-]{36}$/);
 
   await expect(page.locator('[data-tool="researchStore"]')).toBeVisible();
-  await expect(page.getByText(/Found 40 products/).first()).toBeVisible();
+  // First visit scrapes; later tests in the same server reuse the confirmed brand (no re-scrape).
+  await expect(page.getByRole("list", { name: "Progress" }).getByText(/Found 40 products|Using the confirmed brand kit/).first()).toBeVisible();
   const form = page.getByRole("form", { name: "Brand kit" });
   await expect(form).toBeVisible();
-  await expect(form.getByText("please check").first()).toBeVisible();
 
   await form.getByLabel("Color 1 hex").fill("#FF4FA3");
   const picked = form.getByRole("button", { pressed: true });
