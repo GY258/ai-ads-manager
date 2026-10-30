@@ -11,7 +11,7 @@ export function BrandStrip() {
   if (!b) return <span className="text-sm text-muted-foreground">{view?.campaign.store_url.replace(/^https?:\/\//, "")}</span>;
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3">
-      <button onClick={() => setOpen(!open)} aria-expanded={open} className="flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1 hover:bg-muted" title="Brand kit details">
+      <button onClick={() => setOpen(!open)} aria-expanded={open} className="flex min-w-0 items-center gap-2 rounded-full bg-white px-3 py-1.5 hover:bg-white/70" title="Brand kit details">
         {b.logo_url && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={b.logo_url} alt="" className="h-6 max-w-16 object-contain" />

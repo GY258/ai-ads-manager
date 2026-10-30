@@ -60,8 +60,8 @@ export function AdCard({ campaignId, ad, onOpen }: { campaignId: string; ad: AdV
   const needsConfirm = v?.qa_status === "warn" || v?.model === "fallback";
 
   return (
-    <article aria-label={`Ad #${ad.number}`} data-status={ad.status} className="group relative overflow-hidden rounded-xl border bg-card">
-      <button onClick={onOpen} className="relative block aspect-[9/16] w-full bg-muted text-left" aria-label={`Open ad #${ad.number}`}>
+    <article aria-label={`Ad #${ad.number}`} data-status={ad.status} className="group relative overflow-hidden rounded-2xl bg-muted">
+      <button onClick={onOpen} className="relative block aspect-[9/16] w-full overflow-hidden rounded-2xl bg-muted text-left" aria-label={`Open ad #${ad.number}`}>
         <span className="absolute bottom-2 left-2 z-10 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-medium text-white">#{ad.number}</span>
         {v?.status === "ready" && v.final_url && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -92,14 +92,14 @@ export function AdCard({ campaignId, ad, onOpen }: { campaignId: string; ad: AdV
       </div>
       {(failed || v?.model === "fallback") && !busy && (
         <div className="px-2 pb-2">
-          <button onClick={retry} className="w-full rounded-md border px-2 py-1 text-xs hover:bg-muted">
+          <button onClick={retry} className="w-full rounded-full border border-foreground/15 bg-white px-2 py-1.5 text-xs font-medium hover:bg-background">
             Retry
           </button>
         </div>
       )}
       {!v && !busy && !view?.inflight && (
         <div className="px-2 pb-2">
-          <button onClick={retry} className="w-full rounded-md border px-2 py-1 text-xs hover:bg-muted">
+          <button onClick={retry} className="w-full rounded-full border border-foreground/15 bg-white px-2 py-1.5 text-xs font-medium hover:bg-background">
             Render
           </button>
         </div>
@@ -119,11 +119,11 @@ export function AdCard({ campaignId, ad, onOpen }: { campaignId: string; ad: AdV
       ) : (
         v?.status === "ready" &&
         !busy && (
-          <div className="flex gap-1.5 border-t p-2 opacity-100 transition md:opacity-0 md:group-focus-within:opacity-100 md:group-hover:opacity-100">
-            <button className="flex-1 rounded-md bg-emerald-600 px-2 py-1 text-xs font-medium text-white disabled:opacity-40" disabled={ad.status === "approved"} onClick={() => (needsConfirm ? setConfirming(true) : approve())}>
+          <div className="flex gap-1.5 p-2 opacity-100 transition md:opacity-0 md:group-focus-within:opacity-100 md:group-hover:opacity-100">
+            <button className="flex-1 rounded-full bg-primary px-2 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-40" disabled={ad.status === "approved"} onClick={() => (needsConfirm ? setConfirming(true) : approve())}>
               Approve
             </button>
-            <button className="flex-1 rounded-md border px-2 py-1 text-xs disabled:opacity-40" disabled={ad.status === "rejected"} onClick={reject}>
+            <button className="flex-1 rounded-full border border-foreground/15 bg-white px-2 py-1.5 text-xs font-medium disabled:opacity-40" disabled={ad.status === "rejected"} onClick={reject}>
               Reject
             </button>
           </div>

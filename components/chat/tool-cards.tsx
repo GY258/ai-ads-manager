@@ -57,7 +57,7 @@ export function ToolCard({ part, progress, children }: { part: LooseToolPart; pr
   const running = part.state === "input-streaming" || part.state === "input-available";
   const output = part.state === "output-available" ? (part.output as Record<string, unknown>) : null;
   return (
-    <div className="space-y-2 rounded-lg border bg-muted/30 p-3" data-tool={name} data-state={part.state}>
+    <div className="space-y-2 rounded-2xl bg-muted p-3.5" data-tool={name} data-state={part.state}>
       <div className="flex items-center justify-between text-xs font-medium">
         <span>{LABELS[name] ?? name}</span>
         <span className="text-muted-foreground">{running ? "running" : output?.ok === false ? "needs attention" : part.state === "output-error" ? "error" : "done"}</span>

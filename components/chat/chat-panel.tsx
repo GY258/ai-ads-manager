@@ -107,7 +107,7 @@ export function ChatPanel({ campaignId, storeUrl, initialMessages, onActivity }:
         <ConversationScrollButton />
       </Conversation>
       <form
-        className="flex gap-2 border-t p-3"
+        className="m-3 flex gap-1.5 rounded-full bg-muted p-1.5"
         onSubmit={(e) => {
           e.preventDefault();
           if (!input.trim() || busy) return;
@@ -115,8 +115,8 @@ export function ChatPanel({ campaignId, storeUrl, initialMessages, onActivity }:
           setInput("");
         }}
       >
-        <input aria-label="Message" value={input} onChange={(e) => setInput(e.target.value)} className="h-10 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm" placeholder="Tell the agent what to change…" />
-        <Button type="submit" disabled={busy || !input.trim()}>
+        <input aria-label="Message" value={input} onChange={(e) => setInput(e.target.value)} className="h-10 min-w-0 flex-1 rounded-full bg-transparent px-4 text-sm outline-none" placeholder="Tell the agent what to change…" />
+        <Button type="submit" className="h-10 rounded-full px-5" disabled={busy || !input.trim()}>
           Send
         </Button>
       </form>

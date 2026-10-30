@@ -70,9 +70,9 @@ function Form({ campaignId, data, onConfirmed }: { campaignId: string; data: Bra
     }
   }
 
-  const input = "h-9 w-full rounded-md border bg-background px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  const input = "h-9 w-full rounded-xl border bg-white px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring";
   return (
-    <form onSubmit={submit} aria-label="Brand kit" className="space-y-4 rounded-lg border bg-card p-4 text-sm">
+    <form onSubmit={submit} aria-label="Brand kit" className="space-y-4 rounded-2xl bg-white p-4 text-sm">
       <div className="flex items-center gap-3">
         {brand.logo_url ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -199,7 +199,7 @@ function Form({ campaignId, data, onConfirmed }: { campaignId: string; data: Bra
           {formError}
         </p>
       )}
-      <Button type="submit" disabled={pending || selected.length === 0} className="w-full">
+      <Button type="submit" disabled={pending || selected.length === 0} className="w-full rounded-full">
         {pending ? "Saving…" : "Confirm brand kit"}
       </Button>
     </form>
