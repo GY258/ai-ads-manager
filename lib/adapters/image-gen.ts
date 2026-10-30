@@ -22,7 +22,20 @@ export const imageCalls: SceneRequest[] = [];
 export function imageGenerator(): ImageGenerator {
   const e = env();
   if (e.AI_MODE === "mock") return mockGenerator;
-  return e.IMAGE_MODEL.startsWith("fal-ai/") ? falGenerator : gatewayGenerator;
+  return withBudget(e.IMAGE_MODEL.startsWith("fal-ai/") ? falGenerator : gatewayGenerator);
+}
+
+/** Hard cap on paid image calls per process (LIVE_IMAGE_CALL_LIMIT). Smoke tests set it to 1. */
+let liveImageCalls = 0;
+function withBudget(g: ImageGenerator): ImageGenerator {
+  return {
+    async generate(req) {
+      const limit = Number(process.env.LIVE_IMAGE_CALL_LIMIT ?? "Infinity");
+      if (liveImageCalls >= limit) throw new Error(`live image call limit reached (${limit})`);
+      liveImageCalls++;
+      return g.generate(req);
+    },
+  };
 }
 
 const mockGenerator: ImageGenerator = {

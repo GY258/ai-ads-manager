@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { ProgressData } from "@/lib/agent/tools";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 
@@ -17,10 +18,20 @@ const LABELS: Record<string, string> = {
   recordFeedback: "Saving feedback",
 };
 
-export function ProgressList({ items, running }: { items: ProgressData[]; running: boolean }) {
-  if (!items.length && !running) return null;
+export function ProgressList({ items: all, running }: { items: ProgressData[]; running: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!all.length && !running) return null;
+  const hidden = expanded ? 0 : Math.max(0, all.length - 4);
+  const items = all.slice(hidden);
   return (
     <ul className="space-y-0.5 text-xs text-muted-foreground" aria-label="Progress">
+      {hidden > 0 && (
+        <li>
+          <button className="underline-offset-2 hover:underline" onClick={() => setExpanded(true)}>
+            {hidden} earlier steps
+          </button>
+        </li>
+      )}
       {items.map((p, i) => (
         <li key={i} className="flex gap-1.5">
           <span aria-hidden>{i === items.length - 1 && running ? "›" : "✓"}</span>

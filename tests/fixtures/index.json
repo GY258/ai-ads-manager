@@ -1,6 +1,7 @@
 {
-  "_note": "domain → fixture dir. Used by the mock HTTP router (mock mode) and by MSW handlers (tests).",
+  "_note": "domain \u2192 fixture dir. Used by the mock HTTP router (mock mode) and by MSW handlers (tests).",
   "loopycases.com": "loopycases",
   "fernwood.example": "nonshopify",
-  "empty-shop.example": "emptystore"
+  "empty-shop.example": "emptystore",
+  "blank.example": "blank"
 }

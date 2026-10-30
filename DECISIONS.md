@@ -21,3 +21,12 @@ Decisions the spec (SPEC.md) leaves open, one line of reasoning each.
 - **Loopy fixture is trimmed** (40 of 230 products, images for 18): the full page was 6.7 MB. The Firecrawl fixture is hand-written in v2 response shape because no Firecrawl key exists yet.
 - **Non-Shopify fallback chain is Firecrawl → JSON-LD product pages → ask the user**: JSON-LD is free and covers most WooCommerce/BigCommerce stores when Firecrawl is down or unconfigured.
 - **Scripts run with `tsx --conditions=react-server`** so `server-only` modules load outside Next.
+- **Text fitting measures glyph advances + pair kerning directly, not via opentype.js shaping**: opentype.js throws on Inter's GSUB lookup format (found by e2e; unit tests used Exo 2). A test now composes with every bundled font.
+- **Product hero fallback uses a white rounded card, no background removal**: removal adds a paid model call to the failure path, and the card looks deliberate.
+- **Scene QA "zone not clean twice" forces a scrim** in the compositor rather than trusting zone stats: QA has already seen the clutter.
+- **Mock image model builds real scenes from the reference photo** (`lib/compose/scene-builder.ts`) and reads mood words and hex colors from the prompt. Mock-mode feedback ("premium", "avoid busy backgrounds") visibly changes the output, so the feedback loop is testable for free.
+- **Image adapter supports fal (`IMAGE_MODEL=fal-ai/...`, needs `FAL_KEY`) or AI Gateway image-output models** (e.g. `google/gemini-3.1-flash-image`): one Gateway top-up then covers chat, QA and images. Every live image call passes a per-process cap (`LIVE_IMAGE_CALL_LIMIT`).
+- **Stale renders are failed after 6 minutes** (longer than the 300s function limit) when the canvas loads, so a killed function never leaves a card spinning forever; Retry/Render buttons recover.
+- **Open-ended feature: placement-readiness score** (`lib/pipeline/readiness.ts`), from layout + scene QA data: headline size at phone width, contrast, CTA legibility, product fidelity, safe zones. No model calls; it's a card badge plus a breakdown in the drawer.
+- **e2e failure modes are flipped at runtime via `/api/test/flags`**, enabled only when `AI_MODE=mock` and `ENABLE_TEST_HOOKS=1`. Those tests skip when run against a remote URL.
+- **Auth / RLS for later**: tables have RLS on with no policies (server-only access). With real auth, add `user_id = auth.uid()` select/insert/update policies per table, make the storage buckets private with signed URLs, and replace `DEMO_USER_ID` with the session user.

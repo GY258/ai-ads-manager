@@ -321,3 +321,15 @@ export async function adNumber(ad: Pick<Ad, "id" | "campaign_id">): Promise<numb
 export async function markFeedbackApplied(id: string) {
   await (await getDb()).query(`update feedback set applied = true where id = $1`, [id]);
 }
+
+/** A render whose function died (deploy, timeout, crash) never finishes: after `minutes` of silence mark it failed so Retry shows. */
+export async function failStaleVariants(campaignId: string, minutes = 6): Promise<number> {
+  const rows = await (await getDb()).query(
+    `update ad_variants v set status = 'failed', error = 'interrupted: rendering stopped before finishing'
+     from ads a where a.id = v.ad_id and a.campaign_id = $1
+       and v.status in ('queued', 'generating_scene', 'composing') and v.updated_at < now() - make_interval(mins => $2)
+     returning v.id`,
+    [campaignId, minutes],
+  );
+  return rows.length;
+}

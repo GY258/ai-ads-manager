@@ -147,3 +147,23 @@ describe("manage ads", () => {
     expect(newest.scene_prompt).toMatch(/dark premium studio/);
   });
 });
+
+describe("interrupted renders", () => {
+  const ref = useFreshDb();
+  useMsw();
+  it("a variant stuck in flight for > 6 minutes is marked failed when the canvas loads, so Retry shows", async () => {
+    const { campaign } = await confirmedCampaign(1);
+    await planConcepts({ campaignId: campaign.id, count: 2 }, ctxFor(campaign.id));
+    const [a1, a2] = await repo.listAds(campaign.id);
+    const stuck = await repo.insertVariant({ ad_id: a1.id, layout: "split", copy: { headline: "x", cta: "y" } });
+    await repo.updateVariant(stuck.id, {}, "generating_scene");
+    const fresh = await repo.insertVariant({ ad_id: a2.id, layout: "split", copy: { headline: "x", cta: "y" } });
+    await ref.db.query("alter table ad_variants disable trigger ad_variants_touch");
+    await ref.db.query("update ad_variants set updated_at = now() - interval '10 minutes' where id = $1", [stuck.id]);
+    await ref.db.query("alter table ad_variants enable trigger ad_variants_touch");
+    const view = (await getCampaignView(campaign.id))!;
+    expect((await repo.getVariant(stuck.id))!.status).toBe("failed");
+    expect((await repo.getVariant(fresh.id))!.status).toBe("queued");
+    expect(view.ads[0].current?.status).toBe("failed");
+  });
+});

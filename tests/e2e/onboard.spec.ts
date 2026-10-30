@@ -20,7 +20,7 @@ test("home → research progress → brand kit form → edit a color, pick 2 pro
   await form.getByRole("button", { name: "Confirm brand kit" }).click();
 
   await expect(page.getByText(/^Confirmed ·/)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Brand kit details" })).toContainText("confirmed");
+  await expect(page.getByRole("button", { name: /Loopy Cases/ })).toContainText("confirmed");
 });
 
 test("invalid URL shows an inline error with an example", async ({ page }) => {

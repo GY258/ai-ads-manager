@@ -1,6 +1,7 @@
 import * as repo from "@/lib/db/repo";
 import type { Variant } from "@/lib/db/types";
 import { publicUrl } from "@/lib/storage";
+import { readiness } from "@/lib/pipeline/readiness";
 
 export function variantView(v: Variant) {
   return {
@@ -13,6 +14,7 @@ export function variantView(v: Variant) {
     error: v.error,
     qa_status: v.qa_status,
     qa: v.qa,
+    readiness: v.status === "ready" ? readiness(v.qa as Parameters<typeof readiness>[0]) : null,
     final_url: v.final_path ? publicUrl(v.final_path) : null,
     scene_url: v.scene_path ? publicUrl(v.scene_path) : null,
     created_at: v.created_at,
@@ -25,6 +27,7 @@ export async function getCampaignView(campaignId: string) {
   const campaign = await repo.getCampaign(campaignId);
   if (!campaign) return null;
   const brand = campaign.brand_id ? await repo.getBrand(campaign.brand_id) : null;
+  await repo.failStaleVariants(campaignId);
   const ads = await repo.listAds(campaignId);
   const variants = await repo.listCampaignVariants(campaignId);
   const byId = new Map(variants.map((v) => [v.id, v]));

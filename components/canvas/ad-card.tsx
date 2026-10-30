@@ -39,8 +39,20 @@ export function QaBadge({ ad }: { ad: AdView }) {
   return null;
 }
 
+export function ReadinessBadge({ ad }: { ad: AdView }) {
+  const r = ad.current?.readiness;
+  if (!r) return null;
+  const tone = r.grade === "ready" ? "bg-emerald-100 text-emerald-900" : r.grade === "ok" ? "bg-sky-100 text-sky-900" : "bg-rose-100 text-rose-900";
+  return (
+    <span title={r.checks.map((c) => `${c.label}: ${c.detail}`).join("\n")} className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${tone}`}>
+      Placement {r.score}
+    </span>
+  );
+}
+
 export function AdCard({ campaignId, ad, onOpen }: { campaignId: string; ad: AdView; onOpen: () => void }) {
   const { approve, reject, retry, error } = useAdActions(campaignId, ad);
+  const { view } = useCampaign();
   const [confirming, setConfirming] = useState(false);
   const v = ad.current;
   const busy = ad.pending ?? (v && !["ready", "failed"].includes(v.status) ? v : null);
@@ -50,6 +62,7 @@ export function AdCard({ campaignId, ad, onOpen }: { campaignId: string; ad: AdV
   return (
     <article aria-label={`Ad #${ad.number}`} data-status={ad.status} className="group relative overflow-hidden rounded-xl border bg-card">
       <button onClick={onOpen} className="relative block aspect-[9/16] w-full bg-muted text-left" aria-label={`Open ad #${ad.number}`}>
+        <span className="absolute bottom-2 left-2 z-10 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-medium text-white">#{ad.number}</span>
         {v?.status === "ready" && v.final_url && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={v.final_url} alt={`Ad #${ad.number}: ${ad.headline}`} className={`h-full w-full object-cover ${busy ? "opacity-50" : ""}`} />
@@ -69,11 +82,11 @@ export function AdCard({ campaignId, ad, onOpen }: { campaignId: string; ad: AdV
           </span>
         )}
       </button>
-      <span className="absolute left-2 top-2 rounded bg-black/65 px-1.5 py-0.5 text-[11px] font-medium text-white">#{ad.number}</span>
-      {ad.status !== "draft" && (
+            {ad.status !== "draft" && (
         <span className={`absolute right-2 top-2 rounded px-1.5 py-0.5 text-[11px] font-medium ${ad.status === "approved" ? "bg-emerald-600 text-white" : "bg-zinc-700 text-white"}`}>{ad.status}</span>
       )}
       <div className="flex flex-wrap items-center gap-1.5 p-2">
+        <ReadinessBadge ad={ad} />
         <QaBadge ad={ad} />
         <span className="text-[11px] capitalize text-muted-foreground">{ad.angle.replace("_", " ")}</span>
       </div>
@@ -81,6 +94,13 @@ export function AdCard({ campaignId, ad, onOpen }: { campaignId: string; ad: AdV
         <div className="px-2 pb-2">
           <button onClick={retry} className="w-full rounded-md border px-2 py-1 text-xs hover:bg-muted">
             Retry
+          </button>
+        </div>
+      )}
+      {!v && !busy && !view?.inflight && (
+        <div className="px-2 pb-2">
+          <button onClick={retry} className="w-full rounded-md border px-2 py-1 text-xs hover:bg-muted">
+            Render
           </button>
         </div>
       )}

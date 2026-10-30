@@ -65,6 +65,24 @@ export function AdDetail({ campaignId, ad, onClose }: { campaignId: string; ad: 
               </a>
             )}
           </div>
+          {v?.readiness && (
+            <div className="w-full rounded-lg border bg-background p-2.5 text-xs" aria-label="Placement readiness">
+              <div className="mb-1 flex justify-between font-medium">
+                <span>Placement readiness</span>
+                <span>{v.readiness.score}/100</span>
+              </div>
+              <ul className="space-y-0.5">
+                {v.readiness.checks.map((c) => (
+                  <li key={c.id} className="flex justify-between gap-2">
+                    <span>
+                      {c.score >= 1 ? "✓" : c.score >= 0.6 ? "•" : "!"} {c.label}
+                    </span>
+                    <span className="text-muted-foreground">{c.detail}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {v?.qa_status === "warn" && (
             <p className="text-xs text-amber-900">
               {v.model === "fallback" ? "Image generation didn't produce a usable scene, so this uses your real product photo." : "QA: " + (((v.qa as { scene?: { issues?: string[] } }).scene?.issues ?? []).join("; ") || "layout switched to keep text legible")}

@@ -89,6 +89,8 @@ export function mockAgentTurn(prompt: LanguageModelV4Prompt, tools: string[] = [
   if (url && !adRef && has("researchStore")) return [text("On it — reading the store."), call("researchStore", { url })];
   if (adRef && /\bapprove\b/i.test(user) && has("setAdStatus")) return [call("setAdStatus", { adId: adRef, status: "approved" })];
   if (adRef && /\breject\b/i.test(user) && has("setAdStatus")) return [call("setAdStatus", { adId: adRef, status: "rejected" })];
+  const exactHeadline = user.match(/headline\s*(?:to|:)\s*["“]([^"”]+)["”]/i)?.[1];
+  if (adRef && exactHeadline && has("editAdCopy")) return [call("editAdCopy", { adId: adRef, headline: exactHeadline })];
   if (adRef && has("regenerateAd")) {
     const scope = /\b(headline|copy|text|cta|wording)\b/i.test(user) ? "copy" : "both";
     return [text(`Changing ad #${adRef}: ${user.replace(/.*?ad\s*#?\d+\s*[:,-]?\s*/i, "").slice(0, 80)}.`), call("regenerateAd", { adId: adRef, feedback: user, scope })];

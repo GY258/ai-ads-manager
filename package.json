@@ -12,9 +12,11 @@
     "test:watch": "vitest",
     "test:e2e": "next build && playwright test",
     "db:migrate": "tsx scripts/migrate.ts",
-    "smoke:live": "tsx scripts/smoke-live.ts",
+    "smoke:live": "tsx --conditions=react-server scripts/smoke-live.ts",
     "fixtures:record": "tsx scripts/record-fixtures.ts",
-    "test:pg": "sh scripts/test-db-reset.sh && vitest run --no-file-parallelism tests/integration"
+    "test:pg": "sh scripts/test-db-reset.sh && vitest run --no-file-parallelism tests/integration",
+    "research:live": "tsx --conditions=react-server scripts/research-live.ts",
+    "qa:live": "tsx --conditions=react-server scripts/qa-live.ts"
   },
   "dependencies": {
     "@ai-sdk/gateway": "^4.0.130",
