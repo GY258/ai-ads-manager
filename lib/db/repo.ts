@@ -333,3 +333,12 @@ export async function failStaleVariants(campaignId: string, minutes = 6): Promis
   );
   return rows.length;
 }
+
+// ── spend ledger ──────────────────────────────────────────────────────────────
+export async function spentUsd(): Promise<number> {
+  const rows = await (await getDb()).query<{ usd: string | number | null }>(`select coalesce(sum(usd), 0) as usd from spend_log`);
+  return Number(rows[0]?.usd ?? 0);
+}
+export async function logSpend(kind: string, model: string, usd: number, note?: string) {
+  await (await getDb()).query(`insert into spend_log (kind, model, usd, note) values ($1, $2, $3, $4)`, [kind, model, usd, note ?? null]);
+}

@@ -25,14 +25,28 @@ export function imageGenerator(): ImageGenerator {
   return withBudget(e.IMAGE_MODEL.startsWith("fal-ai/") ? falGenerator : gatewayGenerator);
 }
 
-/** Hard cap on paid image calls per process (LIVE_IMAGE_CALL_LIMIT). Smoke tests set it to 1. */
+/** USD per image, from fal's pricing API (2026-10-30). Unknown models are charged conservatively. */
+export const IMAGE_PRICE_USD: Record<string, number> = { "fal-ai/nano-banana/edit": 0.0398, "fal-ai/nano-banana-pro/edit": 0.15 };
+
+/**
+ * Two caps on paid image calls: per process (LIVE_IMAGE_CALL_LIMIT, smoke tests use 1) and a global
+ * ledger in Postgres (LIVE_BUDGET_USD), which holds across serverless instances.
+ */
 let liveImageCalls = 0;
 function withBudget(g: ImageGenerator): ImageGenerator {
   return {
     async generate(req) {
       const limit = Number(process.env.LIVE_IMAGE_CALL_LIMIT ?? "Infinity");
       if (liveImageCalls >= limit) throw new Error(`live image call limit reached (${limit})`);
+      const { spentUsd, logSpend } = await import("@/lib/db/repo");
+      const model = env().IMAGE_MODEL;
+      const price = IMAGE_PRICE_USD[model] ?? 0.2;
+      const budget = Number(process.env.LIVE_BUDGET_USD ?? "1.8");
+      const spent = await spentUsd();
+      if (spent + price > budget) throw new Error(`live image budget reached ($${spent.toFixed(2)} of $${budget})`);
       liveImageCalls++;
+      // Charged before the call: a timeout after fal accepted the job still costs money.
+      await logSpend("image", model, price);
       return g.generate(req);
     },
   };

@@ -52,7 +52,8 @@ export function checkEnv(e: Env = env()): EnvCheck {
     need("SUPABASE_SERVICE_ROLE_KEY");
   }
   if (e.AI_MODE !== "mock") {
-    if (!e.AI_GATEWAY_API_KEY && !e.VERCEL_OIDC_TOKEN) missing.push("AI_GATEWAY_API_KEY");
+    // On Vercel the Gateway authenticates with the request's OIDC token; locally it needs a key or a pulled token.
+    if (!e.AI_GATEWAY_API_KEY && !e.VERCEL_OIDC_TOKEN && process.env.VERCEL !== "1") missing.push("AI_GATEWAY_API_KEY");
     if (e.IMAGE_MODEL.startsWith("fal-ai/")) need("FAL_KEY"); // other IMAGE_MODELs go through AI Gateway
     // Firecrawl is optional: the brand adapter falls back to HTML meta tags.
   }
