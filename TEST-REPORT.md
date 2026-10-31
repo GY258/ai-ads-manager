@@ -6,7 +6,7 @@ Run them: `pnpm test` (unit + integration, PGlite, mock adapters) · `pnpm test:
 `pnpm test:e2e` (build + Playwright on `next start`, mock mode) · `E2E_BASE_URL=<url> npx playwright test` (deployed) ·
 `ALLOW_LIVE=1 pnpm smoke:live` (the only paid test).
 
-**Totals:** 110 unit/integration ✅ · 13 e2e locally ✅ · e2e on preview deployment: ✅ 9 passed + 4 skipped (runtime-hook tests; pass locally) · Lighthouse a11y 100 / 100 ✅ · live spend $1.00 of the $2 test budget (25 fal images incl. QA retries, ledger in `spend_log`)
+**Totals:** 111 unit/integration ✅ · 13 e2e locally ✅ · e2e on preview deployment: ✅ 9 passed + 4 skipped (runtime-hook tests; pass locally) · Lighthouse a11y 100 / 100 ✅ · live spend $1.00 of the $2 test budget (25 fal images incl. QA retries, ledger in `spend_log`)
 
 ## Unit (no network, no DB) — `tests/unit/`
 
@@ -119,6 +119,8 @@ Run them: `pnpm test` (unit + integration, PGlite, mock adapters) · `pnpm test:
 11. gpt-5-nano described changes without calling tools → chat model back to gemini-2.5-flash + "act, don't describe" rule (live).
 12. Session pooler capped at 15 clients → production page loads failed (`EMAXCONNSESSION`, reported by Gary) → node-postgres Pool on the transaction pooler.
 13. Gemini also said "now I'll confirm the brand kit" without calling it → fixed handoffs enforced with `prepareStep` `toolChoice` (`flow.test.ts`).
+14. Loopy's live kit turned pink (reported by Gary): a mock-mode preview deployment shared the production Postgres, and the e2e suite run against it re-confirmed Loopy with color 1 = `#FF4FA3`. Fixed the data (back to the scraped `#8FE8B3`), deleted the preview and 23 mock-only campaigns (backup in `runs/brand-audit/`), and added two guards: the app refuses `AI_MODE=mock` on Postgres (`db-guard.test.ts`, mutation-checked), and external e2e runs refuse a deployment whose `/api/health` reports a Postgres DB (`tests/e2e/global-setup.ts`).
+15. Home form said "couldn't reach ridgewallet.com" in production (reported by Gary) although the store works: the precheck failed on timeouts/5xx from Vercel's IPs. Now only an unresolvable domain blocks; anything else goes on to research and the reason is logged.
 
 ## Open
 

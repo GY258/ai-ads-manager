@@ -14,8 +14,14 @@ export async function startCampaign(_prev: UrlFormState, form: FormData): Promis
   const url = String(form.get("url") ?? "").trim();
   const norm = normalizeStoreUrl(url);
   if (!norm) return { url, error: "That doesn't look like a store URL. Try something like www.loopycases.com" };
-  const reachable = await httpGet(`${norm.origin}/`, { signal: AbortSignal.timeout(10_000) }).then((r) => r.status < 500, () => false);
-  if (!reachable) return { url, error: `We couldn't reach ${norm.domain}. Check the address — for example https://www.loopycases.com` };
+  // Only a domain that doesn't resolve is a typo. Stores often throttle or slow-walk datacenter IPs (Ridge from Vercel
+  // returned "couldn't reach" while working fine elsewhere), so timeouts and 5xx go on to research, which has fallbacks.
+  const check = await httpGet(`${norm.origin}/`, { signal: AbortSignal.timeout(10_000) }).then(
+    (r) => (r.status < 500 ? "ok" : `HTTP ${r.status}`),
+    (e: Error & { cause?: { code?: string } }) => (e.cause?.code === "ENOTFOUND" ? "ENOTFOUND" : `${e.name}: ${e.cause?.code ?? e.message}`),
+  );
+  if (check !== "ok") console.warn(`[startCampaign] ${norm.origin} precheck: ${check}`);
+  if (check === "ENOTFOUND") return { url, error: `We couldn't find ${norm.domain}. Check the address — for example https://www.loopycases.com` };
   const campaign = await repo.createCampaign(norm.origin, norm.domain);
   redirect(`/c/${campaign.id}?start=1`);
 }

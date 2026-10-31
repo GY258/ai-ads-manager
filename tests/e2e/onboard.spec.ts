@@ -30,5 +30,5 @@ test("invalid URL shows an inline error with an example", async ({ page }) => {
   await expect(page.locator("#store-url-error")).toContainText("www.loopycases.com");
   await page.getByLabel("Store URL").fill("https://nowhere.invalid");
   await page.getByRole("button", { name: "Make ads" }).click();
-  await expect(page.locator("#store-url-error")).toContainText("couldn't reach nowhere.invalid");
+  await expect(page.locator("#store-url-error")).toContainText("couldn't find nowhere.invalid");
 });

@@ -38,6 +38,10 @@ async function connect(): Promise<Db> {
     await migrate(db);
     return db;
   }
+  // Mock data in the shared Postgres leaks into the live app (an e2e run once re-confirmed Loopy's kit in pink).
+  if (e.AI_MODE === "mock" && process.env.ALLOW_MOCK_ON_POSTGRES !== "1") {
+    throw new Error("AI_MODE=mock must not use the shared Postgres. Set DB_DRIVER=pglite (see .env.example) or AI_MODE=live.");
+  }
   return createPostgres(e.POSTGRES_URL ?? e.POSTGRES_URL_NON_POOLING!);
 }
 
