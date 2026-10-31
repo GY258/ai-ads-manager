@@ -39,14 +39,14 @@ export function ConceptReview({ campaignId, adIds, onDone }: { campaignId: strin
 
   const input = "h-8 w-full rounded-lg border bg-background px-2 text-sm";
   return (
-    <form aria-label="Review concepts" className="space-y-3" onSubmit={(e) => (e.preventDefault(), approve())}>
+    <form aria-label="Review concepts" className="min-w-0 space-y-3" onSubmit={(e) => (e.preventDefault(), approve())}>
       {rows.map((r) => (
-        <fieldset key={r.id} data-testid="concept" className={`space-y-2 rounded-2xl border bg-background p-3 ${r.keep ? "" : "opacity-50"}`}>
+        <fieldset key={r.id} data-testid="concept" className={`min-w-0 space-y-2 rounded-2xl border bg-background p-3 ${r.keep ? "" : "opacity-50"}`}>
           <legend className="sr-only">Concept #{r.number}</legend>
           <div className="flex items-center gap-2">
             {r.image_url && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={r.image_url} alt="" className="h-10 w-10 rounded-lg object-cover" />
+              <img src={r.image_url} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
             )}
             <div className="min-w-0 flex-1 text-xs">
               <div className="font-semibold">
@@ -54,25 +54,25 @@ export function ConceptReview({ campaignId, adIds, onDone }: { campaignId: strin
               </div>
               <div className="truncate text-muted-foreground">{r.product}</div>
             </div>
-            <button type="button" onClick={() => set(r.id, { keep: !r.keep })} className="rounded-full border px-2.5 py-1 text-xs">
+            <button type="button" onClick={() => set(r.id, { keep: !r.keep })} className="shrink-0 rounded-full border px-2.5 py-1 text-xs">
               {r.keep ? "Remove" : "Keep"}
             </button>
           </div>
           {r.keep && (
             <>
               <input aria-label={`Concept ${r.number} headline`} className={input} value={r.headline} onChange={(e) => set(r.id, { headline: e.target.value })} />
-              <input aria-label={`Concept ${r.number} subhead`} className={input} value={r.subhead ?? ""} placeholder="Subhead (optional)" onChange={(e) => set(r.id, { subhead: e.target.value })} />
-              <div className="flex gap-2">
-                <input aria-label={`Concept ${r.number} CTA`} className={`${input} w-32`} value={r.cta} onChange={(e) => set(r.id, { cta: e.target.value })} />
-                <div className="flex gap-1" role="group" aria-label={`Concept ${r.number} layout`}>
+              <textarea aria-label={`Concept ${r.number} subhead`} rows={2} className="block w-full resize-none rounded-lg border bg-background px-2 py-1.5 text-sm" value={r.subhead ?? ""} placeholder="Subhead (optional)" onChange={(e) => set(r.id, { subhead: e.target.value })} />
+              <div className="flex flex-wrap gap-2">
+                <input aria-label={`Concept ${r.number} CTA`} className={`${input} min-w-0 flex-1 basis-28`} value={r.cta} onChange={(e) => set(r.id, { cta: e.target.value })} />
+                <div className="flex shrink-0 gap-1" role="group" aria-label={`Concept ${r.number} layout`}>
                   {LAYOUTS.map((l) => (
-                    <button key={l.id} type="button" aria-pressed={r.layout === l.id} onClick={() => set(r.id, { layout: l.id })} className={`rounded-full border px-2.5 text-xs ${r.layout === l.id ? "border-foreground bg-foreground text-background" : ""}`}>
+                    <button key={l.id} type="button" aria-pressed={r.layout === l.id} onClick={() => set(r.id, { layout: l.id })} className={`h-8 rounded-full border px-2.5 text-xs ${r.layout === l.id ? "border-foreground bg-foreground text-background" : ""}`}>
                       {l.label}
                     </button>
                   ))}
                 </div>
               </div>
-              <details className="text-xs text-muted-foreground">
+              <details className="break-words text-xs text-muted-foreground">
                 <summary className="cursor-pointer">Scene</summary>
                 {r.scene_prompt}
               </details>
