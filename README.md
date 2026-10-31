@@ -35,7 +35,7 @@ Next.js 16 (App Router) · Vercel AI SDK 7 + AI Gateway · Supabase Postgres + S
 pnpm install
 cp .env.example .env.local   # AI_MODE=mock works with no keys (PGlite + local storage)
 pnpm dev
-pnpm test        # unit + integration (111)
+pnpm test        # unit + integration (112)
 pnpm test:e2e    # Playwright on a production build (15)
 ALLOW_LIVE=1 pnpm smoke:live   # the only paid test (~$0.04)
 ```

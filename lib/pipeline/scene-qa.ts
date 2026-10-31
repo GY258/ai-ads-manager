@@ -43,7 +43,9 @@ export async function runSceneQa(a: { scene: Uint8Array; reference: Uint8Array; 
     name: "scene-qa",
     schema: sceneQaSchema,
     instructions: `You check AI-generated ad scenes before text is added. Image 1 is the generated scene, image 2 is the real product photo.
-Judge strictly: product_match fails if shape, color or print differ. The text zone must contain only smooth background. Any letters, numbers or logo-like marks count as stray_text.`,
+product_match: compare shape and parts (straps, rings, holders, cutouts), print and the product's own logo. Before calling a part missing or extra, look at image 2 again: only report it if it really differs. Color fails only for a clearly different hue (pink → purple, black → silver); shifts from lighting or shadow are at most "warn".
+stray_text: only letters, numbers or logo-like marks the model ADDED (on the background, props or the product where the reference has none). The product's own logo or print that also appears in image 2 is NOT stray text.
+text_zone_clean: the text zone holds only smooth background; ignore the product's own logo when judging it.`,
     prompt: `Text zone for this layout: ${ZONE_PHRASE[a.layout]} List concrete issues (short phrases a prompt can fix).`,
     images: [
       { data: a.scene, mediaType: "image/png" },

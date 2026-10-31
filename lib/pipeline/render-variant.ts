@@ -124,7 +124,7 @@ export async function renderVariant(adId: string, opts: RenderOptions): Promise<
             if (check.qa.product_match === "fail" || !retry) {
               // Never show a mismatched product: hero fallback instead.
               scene = null;
-              sceneQa = { ...check.qa, attempts, fallback_reason: "product did not match the reference twice" };
+              sceneQa = { ...check.qa, attempts, fallback_reason: retry ? "product did not match the reference twice" : "product did not match and the retry image failed" };
             } else {
               outcome = "warn"; // zone/text only: keep it, the compositor's scrim covers it
               dirtyZone = true;
